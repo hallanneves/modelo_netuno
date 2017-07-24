@@ -99,3 +99,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+#local_data
+Models/*
+!Models/.gitkeep
+Summaries/*
+!Summaries/.gitkeep

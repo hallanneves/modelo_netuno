@@ -2,7 +2,7 @@
 #import tensorflow as tf
 import abc
 
-class DBManager(metaclass=abc.ABCMeta):
+class DatasetManager(metaclass=abc.ABCMeta):
     '''
     Abstract class designed for loading and storing
     objects from memory. 
