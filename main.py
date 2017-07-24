@@ -13,41 +13,46 @@ def get_implementation(parent_class, child_class_name):
             return child_class()
     return None
 
+def arg_validation(arg, cla):
+    if get_implementation(cla, arg) != None:
+        return arg
+    else:
+        print(str(arg)+" is not a valid " + cla.__module__ + " name.")
+        sys.exit(2)
+
+
 def process_args(argv):
 
     try:
         long_opts = ["help", "architecture=", "dataset=", "dataset_manager="]
-        opts, _ = getopt.getopt(argv, "ha:d:m:", long_opts)
+        opts, _ = getopt.getopt(argv, "ha:d:m:g:", long_opts)
         if opts == []:
-            print('main.py -a <architecture> -d <dataset> -m <dataset_manager>')
+            print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
             sys.exit(2)
     except getopt.GetoptError:
-        print('main.py -a <architecture> -d <dataset> -m <dataset_manager>')
+        print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
         sys.exit(2)
     print(opts)
     opt_values = {}
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print('main.py -a <architecture> -d <dataset> -m <dataset_manager>')
+            print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
             sys.exit()
+        elif opt in ("-m", "--mode"):
+            if arg in ('train', 'evaluate', 'restore'):
+                opt_values['execution_mode'] = arg
+            else:
+                print(arg + 'is not a possible execution mode')
+
+                sys.exit(2)
         elif opt in ("-a", "--architecture"):
-            if get_implementation(architecture.Architecture, arg) != None:
-                opt_values['architecture_name'] = arg
-            else:
-                print(str(arg)+" is not a valid architecture name.")
-                sys.exit(2)
+            opt_values['architecture_name'] = \
+                                arg_validation(arg, architecture.Architecture)
         elif opt in ("-d", "--dataset"):
-            if get_implementation(dataset.Dataset, arg) != None:
-                opt_values['dataset_name'] = arg
-            else:
-                print(str(arg)+" is not a valid dataset name.")
-                sys.exit(2)
-        elif opt in ("-m", "--dataset_manager"):
-            if get_implementation(dataset_manager.DatasetManager, arg) != None:
-                opt_values['dataset_manager_name'] = arg
-            else:
-                print(str(arg)+" is not a valid dataset manager name.")
-                sys.exit(2)
+            opt_values['dataset_name'] = arg_validation(arg, dataset.Dataset)
+        elif opt in ("-g", "--dataset_manager"):
+            opt_values['dataset_manager_name'] = \
+                        arg_validation(arg, dataset_manager.DatasetManager)
     return opt_values
 
 if __name__ == "__main__":
@@ -55,11 +60,12 @@ if __name__ == "__main__":
     ARCH_NM = OPT_VALUES['architecture_name']
     DATASET_NM = OPT_VALUES['dataset_name']
     DATASET_MAN_NM = OPT_VALUES['dataset_manager_name']
-    #EXECUTION_MODE = OPT_VALUES['execution_mode']
+    EXECUTION_MODE = OPT_VALUES['execution_mode']
     ARCHITECTURE = get_implementation(architecture.Architecture, ARCH_NM)
     DATASET = get_implementation(dataset.Dataset, DATASET_NM)
     DATASET_MANAGER = get_implementation(dataset_manager.DatasetManager,
                                          DATASET_MAN_NM)
+    print(EXECUTION_MODE)
     RES = ARCHITECTURE.prediction('dUMMY', True)
     print(RES)
     RES = DATASET.next_batch(batch_size=24)
