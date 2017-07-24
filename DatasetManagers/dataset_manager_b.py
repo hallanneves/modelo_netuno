@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0,'..')
 import dataset_manager
 
 class DatasetManagerB(dataset_manager.DatasetManager):

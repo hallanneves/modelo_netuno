@@ -55,6 +55,7 @@ if __name__ == "__main__":
     ARCH_NM = OPT_VALUES['architecture_name']
     DATASET_NM = OPT_VALUES['dataset_name']
     DATASET_MAN_NM = OPT_VALUES['dataset_manager_name']
+    #EXECUTION_MODE = OPT_VALUES['execution_mode']
     ARCHITECTURE = get_implementation(architecture.Architecture, ARCH_NM)
     DATASET = get_implementation(dataset.Dataset, DATASET_NM)
     DATASET_MANAGER = get_implementation(dataset_manager.DatasetManager,
