@@ -1,14 +1,12 @@
-import numpy as np
-import tensorflow as tf
-from abc import ABCMeta
+#import numpy as np
+#import tensorflow as tf
+import abc
 
-class Dataset(metaclass=ABCMeta):
-    
-    
-    @abstractmethod
-    def next_batch(self):
+class Dataset(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def next_batch(self, batch_size):
         """
+
         """
         pass
-    
-
