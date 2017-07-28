@@ -12,7 +12,7 @@ class Loss(metaclass=abc.ABCMeta):
 
         Args:
             architecture_output: architecture output tensor
-            target_output: desired output must have the same 
+            target_output: desired output must have the same
             shape as architecture_output
         Returns:
             loss output:

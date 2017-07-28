@@ -31,7 +31,7 @@ def process_args(argv):
 
     try:
         long_opts = ["help", "architecture=", "dataset=",
-                     "dataset_manager=","loss="]
+                     "dataset_manager=", "loss="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:", long_opts)
         if opts == []:
             print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
@@ -62,7 +62,7 @@ def process_args(argv):
                         arg_validation(arg, dataset_manager.DatasetManager)
         elif opt in ("-l", "--loss"):
             opt_values['loss'] = \
-                        arg_validation(arg, loss.Loss)                
+                        arg_validation(arg, loss.Loss)
     return opt_values
 
 if __name__ == "__main__":
