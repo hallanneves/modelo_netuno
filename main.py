@@ -16,8 +16,15 @@ def get_implementation(parent_class, child_class_name):
             return child_class()
     return None
 
+def is_subclass(parent_class, child_class_name):
+    for child_class in parent_class.__subclasses__():
+        if child_class.__name__ == child_class_name:
+            return True
+    return False
+
+
 def arg_validation(arg, cla):
-    if get_implementation(cla, arg) != None:
+    if is_subclass(cla, arg):
         return arg
     else:
         print(str(arg)+" is not a valid " + cla.__module__ + " name.")

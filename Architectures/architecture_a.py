@@ -6,7 +6,7 @@ class ArchitectureA(architecture.Architecture):
                            'depth_size', 'summary_writing_period']
 
         self.open_config(parameters_list)
-
+        print("archtecture_a.py")
 
     def prediction(self, sample, training=False):
         return "faz a predicao usando A "

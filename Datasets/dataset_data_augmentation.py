@@ -1,16 +1,18 @@
-from __future__ import absolute_import
-from __future__ import division
+from __future__ import absolute_import, division
+
+import glob
 import gzip
 import os
-import numpy as np
-from six.moves import urllib
-from six.moves import xrange  # pylint: disable=redefined-builtin
 import random
-import glob
 from time import time
-from config import *
+
+import numpy as np
+
 import dataset
 import leveldb
+from six.moves import xrange  # pylint: disable=redefined-builtin
+from six.moves import urllib
+
 
 def readImageFromDB(db, key, size):
     image = np.reshape(np.fromstring(db.Get(key), dtype=np.float32), size)
@@ -30,9 +32,6 @@ class DataSet(object):
         self._depth_size = depth_size
         self.invert = invert
         self.rotate = rotate
-
-    def getTransmission(n):
-        self._db.Get(str(n))
 
     def next_batch(self, batch_size):
         """Return the next `batch_size` examples from this data set."""
@@ -80,34 +79,33 @@ class DataSet(object):
             if inversion:
                 images[n] = np.fliplr(images[n])
                 depths[n] = np.fliplr(depths[n])
-        return images, depths#, transmission
+        return images, depths
 
 
 class DatasetDataAugmentation(dataset.Dataset):
     def __init__(self):
-        config = configMainSimulator()
-        self.input_size = config.input_size
-        self.depth_size = config.depth_size
-        self.db = leveldb.LevelDB(config.leveldb_path + 'db')
+        self.input_size = self.config_dict['input_size']
+        self.depth_size = self.config_dict['depth_size']
+        self.db = leveldb.LevelDB(self.config_dict['leveldb_path'] + 'db')
         self.num_examples = int(self.db.Get('num_examples'))
         self.num_examples_val = int(self.db.Get('num_examples_val'))
-        if config.invert:
+        if self.config_dict["invert"]:
             self.num_examples = self.num_examples * 2
             self.num_examples_val = self.num_examples_val * 2
-        if config.rotate:
+        if self.config_dict["rotate"]:
             self.num_examples = self.num_examples * 4
             self.num_examples_val = self.num_examples_val * 4
         self.images_key = range(self.num_examples)
         self.images_key_val = range(self.num_examples_val)
-        
-        self.train = DataSet(self.images_key, config.input_size,
-                             config.depth_size, self.num_examples,
-                             self.db, validation=False, invert=config.invert,
-                             rotate=config.rotate)
-        self.validation = DataSet(self.images_key_val, config.input_size,
-                                  config.depth_size, self.num_examples_val,
+
+        self.train = DataSet(self.images_key, self.config_dict["input_size"],
+                             self.config_dict["depth_size"], self.num_examples,
+                             self.db, validation=False, invert=self.config_dict["invert"],
+                             rotate=self.config_dict["rotate"])
+        self.validation = DataSet(self.images_key_val, self.config_dict["input_size"],
+                                  self.config_dict["depth_size"], self.num_examples_val,
                                   self.db, validation=True,
-                                  invert=config.invert, rotate=config.rotate)
+                                  invert=self.config_dict["invert"], rotate=self.config_dict["rotate"])
     def next_batch_train(self, batch_size, num_epochs=None):
         images, depths = self.train.next_batch(batch_size, num_epochs)
         return images, depths

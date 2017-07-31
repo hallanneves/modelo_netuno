@@ -21,5 +21,5 @@
     "histograms_list": [],
     "features_list": [],
     "features_opt_list": [],
-    "use_tensorboard": "True"
+    "use_tensorboard": true
 }

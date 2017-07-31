@@ -1,5 +1,5 @@
 {
     "WEIGHTS_FILE": "vgg16_weights.npz",
-    "use_discriminator": "False",
-    "restore_discriminator": "False"
+    "use_discriminator": false,
+    "restore_discriminator": false
 }

@@ -10,7 +10,7 @@
     "training_path_ground_truth": "../datasets/datasetDepthV6/GroundTruth/",
     "validation_path": "/media/nautec/fcc48c1a-c797-4ba9-92c0-b93b9fc4dd0e/Places/validation",
     "validation_path_ground_truth": "../datasets/datasetDepthV6/ValidationGroundTruth/",
-    "use_depths": "False",
-    "invert": "True",
-    "rotate": "True"
+    "use_depths": false,
+    "invert": true,
+    "rotate": true
 }
