@@ -64,19 +64,19 @@ def process_args(argv):
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
     ARCH_NM = OPT_VALUES['architecture_name']
-    # DATASET_NM = OPT_VALUES['dataset_name']
+    DATASET_NM = OPT_VALUES['dataset_name']
     # DATASET_MAN_NM = OPT_VALUES['dataset_manager_name']
     # EXECUTION_MODE = OPT_VALUES['execution_mode']
     # LOSS_NM = OPT_VALUES['loss']
     ARCHITECTURE = get_implementation(architecture.Architecture, ARCH_NM)
-    # DATASET = get_implementation(dataset.Dataset, DATASET_NM)
+    DATASET = get_implementation(dataset.Dataset, DATASET_NM)
     # DATASET_MANAGER = get_implementation(dataset_manager.DatasetManager,
     #                                      DATASET_MAN_NM)
     # LOSS = get_implementation(loss.Loss, LOSS_NM)
     # print(EXECUTION_MODE)
     RES = ARCHITECTURE.prediction('dUMMY', True)
     print(RES)
-    # RES = DATASET.next_batch(batch_size=24)
-    # print(RES)
+    RES = DATASET.next_batch(batch_size=24)
+    print(RES)
     # RES = DATASET_MANAGER.load_data([1, 2, 3])
     # print(RES)
