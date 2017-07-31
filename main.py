@@ -67,12 +67,12 @@ if __name__ == "__main__":
     DATASET_NM = OPT_VALUES['dataset_name']
     # DATASET_MAN_NM = OPT_VALUES['dataset_manager_name']
     # EXECUTION_MODE = OPT_VALUES['execution_mode']
-    # LOSS_NM = OPT_VALUES['loss']
+    LOSS_NM = OPT_VALUES['loss']
     ARCHITECTURE = get_implementation(architecture.Architecture, ARCH_NM)
     DATASET = get_implementation(dataset.Dataset, DATASET_NM)
     # DATASET_MANAGER = get_implementation(dataset_manager.DatasetManager,
     #                                      DATASET_MAN_NM)
-    # LOSS = get_implementation(loss.Loss, LOSS_NM)
+    LOSS = get_implementation(loss.Loss, LOSS_NM)
     # print(EXECUTION_MODE)
     RES = ARCHITECTURE.prediction('dUMMY', True)
     print(RES)
