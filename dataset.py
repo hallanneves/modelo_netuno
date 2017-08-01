@@ -6,12 +6,12 @@ import json
 
 class Dataset(metaclass=abc.ABCMeta):
 
-    # @abc.abstractmethod
-    # def next_batch_train(self, batch_size, num_epochs=None):
-    #     """
+    @abc.abstractmethod
+    def next_batch_train(self):
+        """
 
-    #     """
-    #     pass
+        """
+        pass
 
     # @abc.abstractmethod
     # def next_batch_validation(self, batch_size, num_epochs=None):

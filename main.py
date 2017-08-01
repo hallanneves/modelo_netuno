@@ -83,7 +83,7 @@ if __name__ == "__main__":
     # print(EXECUTION_MODE)
     RES = ARCHITECTURE.prediction('dUMMY', True)
     print(RES)
-    RES = DATASET.next_batch(batch_size=24)
+    RES = DATASET.next_batch_train()
     print(RES)
     # RES = DATASET_MANAGER.load_data([1, 2, 3])
     # print(RES)
