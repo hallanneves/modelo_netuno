@@ -30,7 +30,8 @@ class Loss(metaclass=abc.ABCMeta):
                                 self.__class__.__name__ + ' execution.')
 
     def open_config(self, parameters_list):
-        config_filename = sys.modules[self.__module__].__file__[:-3]+'.json'
-        with open(config_filename) as config_file:
-            self.config_dict = json.load(config_file)
-        self.verify_config(parameters_list)
+        if parameters_list: # if parameters list is empty does not open file
+            config_filename = sys.modules[self.__module__].__file__[:-3]+'.json'
+            with open(config_filename) as config_file:
+                self.config_dict = json.load(config_file)
+            self.verify_config(parameters_list)
