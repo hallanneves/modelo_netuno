@@ -1,4 +1,3 @@
-import sys
 import loss
 
 class LossA(loss.Loss):
