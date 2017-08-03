@@ -9,7 +9,9 @@ def _bytes_feature(value):
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-original_images = []
+def _float_feature(value):
+    return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
 
 TF_RECORDS_FILENAME = 'Datasets/Data/nyu/tfrecords/nyu.tfrecords'
 
@@ -25,9 +27,7 @@ FILENAME_PAIRS = zip(IMAGES, DEPTHS)
 
 for img_path, depth_path in FILENAME_PAIRS:
     img = np.array(Image.open(img_path))
-    depth = np.array(Image.open(depth_path))
-
-    original_images.append((img, depth))
+    depth = np.array(Image.open(depth_path), dtype=np.uint8)
 
     image_raw = img.tostring()
     depth_raw = depth.tostring()

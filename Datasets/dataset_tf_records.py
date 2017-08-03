@@ -9,6 +9,11 @@ class DatasetTfRecords(dataset.Dataset):
     def __init__(self):
         parameters_list = ["tfr_path", "input_size", "output_size"]
         self.open_config(parameters_list)
+        self.batch_size = self.config_dict["batch_size"]
+        self.input_size = self.config_dict["input_size"]
+        self.input_size_prod = self.input_size[0] * self.input_size[1] * self.input_size[2]
+        self.output_size = self.config_dict["output_size"]
+        self.output_size_prod = self.output_size[0] * self.output_size[1] * self.output_size[2]
         self.tfr_path = self.config_dict["tfr_path"]
         self.train_file = [self.tfr_path + f for f in os.listdir(self.tfr_path)]
         self.num_file = len(self.train_file)
@@ -22,13 +27,14 @@ class DatasetTfRecords(dataset.Dataset):
             serialized_example,
             features={
                 'image_raw': tf.FixedLenFeature([], tf.string),
-                'depth': tf.FixedLenFeature([], tf.string),
+                'depth_raw': tf.FixedLenFeature([], tf.string),
             })
         image = tf.decode_raw(features['image_raw'], tf.uint8)
-        image = tf.reshape(image, self.config_dict["input_size"])
-
-        depth = tf.decode_raw(features['depth'], tf.uint8)
-        depth = tf.reshape(depth, self.config_dict["depth_size"])
+        image.set_shape([self.input_size_prod])
+        image = tf.cast(image, tf.float32) * (1. / 255)
+        depth = tf.decode_raw(features['depth_raw'], tf.uint8)
+        depth.set_shape([self.output_size_prod])
+        depth = tf.cast(depth, tf.float32) * (100. / 255)
 
         return image, depth
 
@@ -49,17 +55,21 @@ class DatasetTfRecords(dataset.Dataset):
                 depth is a float tensor with shape [batch size] + depth_size
         """
 
-        filename = os.path.join(self.tfr_path, self.train_file[0])
+        filename = self.train_file
+        print(filename)
 
-        with tf.name_scope('input'):
-            filename_queue = tf.train.string_input_producer(
-                [filename], num_epochs=self.config_dict["num_epochs"])
+        filename_queue = tf.train.string_input_producer(
+            filename, num_epochs=self.config_dict["num_epochs"])
 
-            image, depth = self.read_and_decode(filename_queue)
+        image, depth = self.read_and_decode(filename_queue)
 
-            images, depths = tf.train.shuffle_batch(
-                [image, depth], batch_size=self.config_dict["batch_size"],
-                num_threads=self.config_dict["num_threads"],
-                capacity=1000 + 3 * self.config_dict["batch_size"],
-                min_after_dequeue=1000)
-            return images, depths
+        images, depths = tf.train.shuffle_batch(
+            [image, depth], batch_size=self.config_dict["batch_size"],
+            num_threads=self.config_dict["num_threads"],
+            capacity=100+ 3 * self.config_dict["batch_size"],
+            min_after_dequeue=100
+            )
+        depths = tf.reshape(depths, [self.batch_size] + self.output_size)
+        images = tf.reshape(images, [self.batch_size] + self.input_size)
+
+        return images, depths

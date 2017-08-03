@@ -20,7 +20,7 @@ class Dataset(metaclass=abc.ABCMeta):
     #     """
     #     pass
 
-    
+
     def verify_config(self, parameters_list):
         for parameter in parameters_list:
             if parameter not in self.config_dict:

@@ -103,7 +103,7 @@ def process_args(argv):
                         arg_validation(arg, loss.Loss)
     return opt_values
 
-def training(loss, learning_rate):
+def training(loss_op, learning_rate):
     """Sets up the training Ops.
 
     Creates a summarizer to track the loss over time in TensorBoard.
@@ -114,19 +114,19 @@ def training(loss, learning_rate):
     Args:
         loss: Loss tensor, from loss().
         learning_rate: The learning rate to use for gradient descent.
-    
+
     Returns:
         train_op: The Op for training.
     """
     # Add a scalar summary for the snapshot loss.
-    tf.summary.scalar('loss', loss)
+    tf.summary.scalar('loss', loss_op)
     # Create the gradient descent optimizer with the given learning rate.
     optimizer = tf.train.AdamOptimizer(learning_rate)
     # Create a variable to track the global step.
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Use the optimizer to apply the gradients that minimize the loss
     # (and also increment the global step counter) as a single training step.
-    train_op = optimizer.minimize(loss, global_step=global_step)
+    train_op = optimizer.minimize(loss_op, global_step=global_step)
     return train_op
 
 def run_training(opt_values):
@@ -146,9 +146,13 @@ def run_training(opt_values):
     with tf.Graph().as_default():
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
-        architecture_output = architecture_imp.prediction(architecture_input)
-        loss_value = loss_imp.evaluate(architecture_output, target_output)
-        train_op = training(loss_value, 10**(-4))
+        architecture_output = architecture_imp.prediction(architecture_input, training=True)
+        print(target_output)
+        print(architecture_output)
+        print(architecture_input)
+        loss_op = loss_imp.evaluate(architecture_output, target_output)
+        print(loss_op)
+        train_op = training(loss_op, 10**(-4))
             # The op for initializing the variables.
         init_op = tf.group(tf.global_variables_initializer(),
                            tf.local_variables_initializer())
@@ -175,17 +179,17 @@ def run_training(opt_values):
                 # of your ops or variables, you may include them in
                 # the list passed to sess.run() and the value tensors
                 # will be returned in the tuple from the call.
-                _, loss_value = sess.run([train_op, loss])
-
+                _, loss_value = sess.run([train_op, loss_op])
                 duration = time.time() - start_time
 
                 # Print an overview fairly often.
                 if step % 100 == 0:
-                    print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value,
+                    print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),
                                                                duration))
                 step += 1
         except tf.errors.OutOfRangeError:
-            print('Done training for %d epochs, %d steps.' % (FLAGS.num_epochs, step))
+            print('Done training for %d epochs, %d steps.' %
+                  (dataset_imp.config_dict["num_epochs"], step))
         finally:
             # When done, ask the threads to stop.
             coord.request_stop()
