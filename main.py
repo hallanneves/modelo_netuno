@@ -1,7 +1,9 @@
 import getopt
 import sys
 import time
+import os
 
+import json
 import numpy as np
 import tensorflow as tf
 
@@ -62,6 +64,7 @@ def arg_validation(arg, cla):
         sys.exit(2)
 
 
+ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss>'
 def process_args(argv):
     """It checks and organizes the arguments in a dictionary.
 
@@ -73,15 +76,15 @@ def process_args(argv):
                      "dataset_manager=", "loss="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:", long_opts)
         if opts == []:
-            print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
+            print(ERROR_MSG)
             sys.exit(2)
     except getopt.GetoptError:
-        print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
+        print(ERROR_MSG)
         sys.exit(2)
     opt_values = {}
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print('main.py -a <architecture> -d <dataset> -g <dataset_manager>')
+            print(ERROR_MSG)
             sys.exit()
         elif opt in ("-m", "--mode"):
             if arg in ('train', 'evaluate', 'restore'):
@@ -197,6 +200,33 @@ def run_training(opt_values):
         # Wait for threads to finish.
         coord.join(threads)
         sess.close()
+
+def log(opt_values): #maybe in another module?
+    # Get architecture, dataset and loss name
+    arch_nm = opt_values['architecture_name']
+    dataset_name = opt_values['dataset_name']
+    loss_name = opt_values['loss']
+    # Get implementations
+    architecture_imp = get_implementation(architecture.Architecture, arch_nm)
+    dataset_imp = get_implementation(dataset.Dataset, dataset_name)
+    loss_imp = get_implementation(loss.Loss, loss_name)
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    log_name = today + '_' + arch_nm + '_' + dataset_name + '_' +\
+            loss_name + '_' + opt_values['execution_mode'] + '.json'
+    json_data = {
+        "architecture": architecture_imp.config_dict,
+        "dataset": dataset_imp.config_dict,
+        "loss": loss_imp.config_dict,
+        "execution_mode": opt_values['execution_mode']}
+    json_data["architecture"]["name"] = arch_nm
+    json_data["dataset"]["name"] = dataset_name
+    json_data["loss"]["name"] = loss_name
+
+    logdir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
+    log_path = os.path.join(logdir, log_name)
+    with open(log_path, 'w') as outfile:
+        json.dump(json_data, outfile)
 
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
