@@ -122,7 +122,7 @@ def training(loss_op, learning_rate):
         train_op: The Op for training.
     """
     # Add a scalar summary for the snapshot loss.
-    tf.summary.scalar('loss', loss_op)
+    tf.summary.scalar('loss', tf.reduce_mean(loss_op))
     # Create the gradient descent optimizer with the given learning rate.
     optimizer = tf.train.AdamOptimizer(learning_rate)
     # Create a variable to track the global step.
@@ -137,11 +137,11 @@ def run_training(opt_values):
 
     """
     # Get architecture, dataset and loss name
-    arch_nm = opt_values['architecture_name']
+    arch_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
-    loss_name = opt_values['loss']
+    loss_name = opt_values['loss'] # TODO: loss_name
     # Get implementations
-    architecture_imp = get_implementation(architecture.Architecture, arch_nm)
+    architecture_imp = get_implementation(architecture.Architecture, arch_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
 
@@ -156,7 +156,16 @@ def run_training(opt_values):
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         print(loss_op)
         train_op = training(loss_op, 10**(-4))
-            # The op for initializing the variables.
+        # Create summary
+        time_str = time.strftime("%Y-%m-%d_%H:%M")
+        summaries_dir = "Summaries/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+                        "_" + time_str
+        os.makedirs(summaries_dir)
+        # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+        merged = tf.summary.merge_all()
+        train_writer = tf.summary.FileWriter(summaries_dir + '/train')
+        test_writer = tf.summary.FileWriter(summaries_dir + '/test')
+        # The op for initializing the variables.
         init_op = tf.group(tf.global_variables_initializer(),
                            tf.local_variables_initializer())
 
@@ -182,9 +191,9 @@ def run_training(opt_values):
                 # of your ops or variables, you may include them in
                 # the list passed to sess.run() and the value tensors
                 # will be returned in the tuple from the call.
-                _, loss_value = sess.run([train_op, loss_op])
+                summary, loss_value, _ = sess.run([merged, loss_op, train_op])
                 duration = time.time() - start_time
-
+                train_writer.add_summary(summary, step)
                 # Print an overview fairly often.
                 if step % 100 == 0:
                     print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),

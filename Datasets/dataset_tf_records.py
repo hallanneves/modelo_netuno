@@ -1,4 +1,3 @@
-import sys
 import os
 
 import tensorflow as tf
@@ -34,7 +33,7 @@ class DatasetTfRecords(dataset.Dataset):
         image = tf.cast(image, tf.float32) * (1. / 255)
         depth = tf.decode_raw(features['depth_raw'], tf.uint8)
         depth.set_shape([self.output_size_prod])
-        depth = tf.cast(depth, tf.float32) * (100. / 255)
+        depth = tf.cast(depth, tf.float32) * (1. / 255)
 
         return image, depth
 
@@ -71,5 +70,8 @@ class DatasetTfRecords(dataset.Dataset):
             )
         depths = tf.reshape(depths, [self.batch_size] + self.output_size)
         images = tf.reshape(images, [self.batch_size] + self.input_size)
+        tf.summary.image("depth", depths)
+        tf.summary.image("image", images)
+
 
         return images, depths

@@ -20,15 +20,17 @@ WRITER = tf.python_io.TFRecordWriter(TF_RECORDS_FILENAME)
 IMAGE_PATH = 'Datasets/Data/nyu/images/'
 DEPTH_PATH = 'Datasets/Data/nyu/depths/'
 
-IMAGES = [IMAGE_PATH + f for f in os.listdir(IMAGE_PATH)]
-DEPTHS = [DEPTH_PATH + f for f in os.listdir(DEPTH_PATH)]
+IMAGES = sorted([IMAGE_PATH + f for f in os.listdir(IMAGE_PATH)])
+DEPTHS = sorted([DEPTH_PATH + f for f in os.listdir(DEPTH_PATH)])
 
 FILENAME_PAIRS = zip(IMAGES, DEPTHS)
 
 for img_path, depth_path in FILENAME_PAIRS:
     img = np.array(Image.open(img_path))
-    depth = np.array(Image.open(depth_path), dtype=np.uint8)
-
+    depth = np.array(Image.open(depth_path)) * (255.0/65535.0)
+    depth = depth.astype(np.uint8)
+    # print(img_path)
+    # print(depth_path)
     image_raw = img.tostring()
     depth_raw = depth.tostring()
 

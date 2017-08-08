@@ -76,4 +76,6 @@ class ArchitectureDepthTest(architecture.Architecture):
                 stride=[1, 1], padding='SAME', normalizer_fn=tf.contrib.layers.batch_norm,
                 normalizer_params = { 'is_training': training, 'center': True, 
                 'updates_collections': None, 'scale': True}, activation_fn=tf.nn.sigmoid)
+
+        tf.summary.image("architecture_output", linearCombination2)
         return linearCombination2
