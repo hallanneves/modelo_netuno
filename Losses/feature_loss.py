@@ -13,6 +13,9 @@ class FeatureLoss(loss.Loss):
 
         Args:\n
 
+        weights_file: The file that contains the weights to load in the VGG16 network that will
+        calculate the Feature Reconstruction Loss.
+
         layer: The string of the layer to calculate the feature loss on. The parameter can be 
         passed as a list of strings if multiple layers are intended or as a simple string. 
         Available choices for layers are:
@@ -385,3 +388,4 @@ class FeatureLoss(loss.Loss):
         load_weights(loss_parameters)
 
         return loss
+    

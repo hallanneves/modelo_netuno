@@ -1,5 +1,6 @@
 {
-    "WEIGHTS_FILE": "vgg16_weights.npz",
+    "weights_file": "vgg16_weights.npz",
+    "loss_layer": "relu21",
     "use_discriminator": false,
     "restore_discriminator": false
 }
