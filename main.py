@@ -74,7 +74,7 @@ def process_args(argv):
     """
 
     try:
-        long_opts = ["help", "architecture=", "dataset=",
+        long_opts = ["help", "architecture=", "dataset=", "summary_path=",
                      "dataset_manager=", "loss=", "model_path="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:", long_opts)
         if opts == []:
@@ -144,7 +144,7 @@ def training(loss_op, learning_rate):
     # Use the optimizer to apply the gradients that minimize the loss
     # (and also increment the global step counter) as a single training step.
     train_op = optimizer.minimize(loss_op, global_step=global_step)
-    return train_op
+    return train_op, global_step
 
 def check_needed_parameters(parameter_values):
     if parameter_values["execution_mode"] == "train":
@@ -154,7 +154,8 @@ def check_needed_parameters(parameter_values):
                              "model_path", "summary_path"]
     for parameter in needed_parameters:
         if parameter not in parameter_values:
-            print("Parameters list must contain an" + parameter + "in the training mode")
+            print("Parameters list must contain an " + parameter + " in the " +\
+                  parameter_values["execution_mode"]+" mode.")
             sys.exit(2)
 
 def run_training(opt_values):
@@ -180,7 +181,7 @@ def run_training(opt_values):
         print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         print(loss_op)
-        train_op = training(loss_op, 10**(-4))
+        train_op, global_step = training(loss_op, 10**(-4))
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
         if opt_values["execution_mode"] == "train":
@@ -217,11 +218,11 @@ def run_training(opt_values):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         try:
-            step = 0
             if opt_values["execution_mode"] == "restore":
                 # Restore variables from disk.
-                saver.restore(sess, "/tmp/model.ckpt")
+                saver.restore(sess, opt_values["model_path"] + "/model.ckpt")
                 print("Model restored.")
+            step = sess.run(global_step)
             while not coord.should_stop():
                 start_time = time.time()
 
@@ -287,5 +288,5 @@ if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
     EXECUTION_MODE = OPT_VALUES['execution_mode']
     check_needed_parameters(OPT_VALUES)
-    if EXECUTION_MODE == 'train':
+    if EXECUTION_MODE in ('train', 'restore'):
         run_training(OPT_VALUES)

@@ -9,6 +9,7 @@ class TransmissionNet(architecture.Architecture):
 
     def prediction(self, sample, training=False):
         n_params = self.config_dict['normalizer_parameters']
+        n_params.update({'is_training': training})
         #first convolution
         #INPUT: 16x16x3
         #KERNEL: 3x1
