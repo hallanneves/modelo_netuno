@@ -74,7 +74,7 @@ def process_args(argv):
     """
 
     try:
-        long_opts = ["help", "architecture=", "dataset=", "summary_path=",
+        long_opts = ["help", "architecture=", "dataset=",
                      "dataset_manager=", "loss=", "execution_path="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:", long_opts)
         if opts == []:
@@ -112,12 +112,6 @@ def process_args(argv):
             else:
                 print(arg + " is not a valid folder path.")
                 sys.exit(2)
-        elif opt in ("-p", "--summary_path"):
-            if os.path.isdir(arg):
-                opt_values['summary_path'] = arg
-            else:
-                print(arg + " is not a valid folder path.")
-                sys.exit(2)
     return opt_values
 
 def training(loss_op, learning_rate):
@@ -151,7 +145,7 @@ def check_needed_parameters(parameter_values):
         needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
     if parameter_values["execution_mode"] == "restore":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name",
-                             "execution_path"]#, "summary_path"]
+                             "execution_path"]
     for parameter in needed_parameters:
         if parameter not in parameter_values:
             print("Parameters list must contain an " + parameter + " in the " +\
