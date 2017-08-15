@@ -75,7 +75,7 @@ def process_args(argv):
 
     try:
         long_opts = ["help", "architecture=", "dataset=", "summary_path=",
-                     "dataset_manager=", "loss=", "model_path="]
+                     "dataset_manager=", "loss=", "execution_path="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:", long_opts)
         if opts == []:
             print(ERROR_MSG)
@@ -106,9 +106,9 @@ def process_args(argv):
         elif opt in ("-l", "--loss"):
             opt_values['loss_name'] = \
                         arg_validation(arg, loss.Loss)
-        elif opt in ("-p", "--model_path"):
+        elif opt in ("-p", "--execution_path"):
             if os.path.isdir(arg):
-                opt_values['model_path'] = arg
+                opt_values['execution_path'] = arg
             else:
                 print(arg + " is not a valid folder path.")
                 sys.exit(2)
@@ -151,7 +151,7 @@ def check_needed_parameters(parameter_values):
         needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
     if parameter_values["execution_mode"] == "restore":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name",
-                             "model_path", "summary_path"]
+                             "execution_path"]#, "summary_path"]
     for parameter in needed_parameters:
         if parameter not in parameter_values:
             print("Parameters list must contain an " + parameter + " in the " +\
@@ -173,6 +173,8 @@ def run_training(opt_values):
     log(opt_values)
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
+        
+        EXECUTION_MODE = opt_values["execution_mode"]
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
         architecture_output = architecture_imp.prediction(architecture_input, training=True)
@@ -184,13 +186,22 @@ def run_training(opt_values):
         train_op, global_step = training(loss_op, 10**(-4))
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
+
         if opt_values["execution_mode"] == "train":
-            summary_dir = "Summaries/" + dataset_name + "_" + arch_name + "_" + loss_name +\
-                            "_" + time_str
-            os.makedirs(summary_dir)
+            execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+                        "_" + time_str
+            os.makedirs(execution_dir)
         elif opt_values["execution_mode"] == "restore":
-            summary_dir = opt_values["summary_path"]
-        # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+            execution_dir = opt_values["execution_path"]
+
+        model_dir = os.path.join(execution_dir, "model")
+        if not os.path.isdir(model_dir):
+            os.makedirs(model_dir)
+        summary_dir = os.path.join(execution_dir, "summary")
+        if not os.path.isdir(summary_dir):
+            os.makedirs(summary_dir)
+
+        # Merge all the summaries and write
         merged = tf.summary.merge_all()
         train_writer = tf.summary.FileWriter(summary_dir + '/train')
         test_writer = tf.summary.FileWriter(summary_dir + '/test')
@@ -199,13 +210,6 @@ def run_training(opt_values):
                            tf.local_variables_initializer())
         # Add ops to save and restore all the variables.
         saver = tf.train.Saver()
-        if opt_values["execution_mode"] == "train":
-            model_dir = "Models/" + dataset_name + "_" + arch_name + "_" + loss_name +\
-                        "_" + time_str
-            os.makedirs(model_dir)
-        elif opt_values["execution_mode"] == "restore":
-            model_dir = opt_values["model_path"]
-            
         # Create a session for running operations in the Graph.
         sess = tf.Session()
 
@@ -220,7 +224,8 @@ def run_training(opt_values):
         try:
             if opt_values["execution_mode"] == "restore":
                 # Restore variables from disk.
-                saver.restore(sess, opt_values["model_path"] + "/model.ckpt")
+                model_file_path = os.path.join(model_dir, "model.ckpt")
+                saver.restore(sess, model_file_path)
                 print("Model restored.")
             step = sess.run(global_step)
             while not coord.should_stop():
@@ -279,8 +284,11 @@ def log(opt_values): #maybe in another module?
     json_data["dataset_name"] = dataset_name
     json_data["loss_name"] = loss_name
 
-    logdir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
-    log_path = os.path.join(logdir, log_name)
+    log_dir = os.path.join(opt_values["execution_path"], "logs")
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)
+    #log_dir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
+    log_path = os.path.join(log_dir, log_name)
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
 
