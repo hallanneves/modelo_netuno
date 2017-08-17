@@ -9,6 +9,8 @@ import tensorflow as tf
 
 import architecture
 import Architectures
+import optimizer
+import Optimizers
 import dataset
 import dataset_manager
 import DatasetManagers
@@ -16,21 +18,18 @@ import Datasets
 import loss
 import Losses
 
-
 def get_implementation(parent_class, child_class_name):
     """Returns a subclass instance.
-
     It searchs in the subclasses of `parent_class` a class
     named `child_class_name` and return a instance od this class
-
     Args:
         parent_class: parent class.
         child_class_name: string containing the child class name.
-
     Returns:
         child_class: instance of child class. `None` if not found.
     """
     for child_class in parent_class.__subclasses__():
+        print (child_class.__name__)
         if child_class.__name__ == child_class_name:
             return child_class()
     return None
@@ -64,7 +63,7 @@ def arg_validation(arg, cla):
         sys.exit(2)
 
 
-ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss>'
+ERROR_MSG = 'main.py -m <execution_mode> -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
 def process_args(argv):
     """It checks and organizes the arguments in a dictionary.
 
@@ -73,8 +72,8 @@ def process_args(argv):
 
     try:
         long_opts = ["help", "architecture=", "dataset=",
-                     "dataset_manager=", "loss="]
-        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:", long_opts)
+                     "dataset_manager=", "loss=", "optimizer="]
+        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:o:", long_opts)
         if opts == []:
             print(ERROR_MSG)
             sys.exit(2)
@@ -101,12 +100,15 @@ def process_args(argv):
         elif opt in ("-g", "--dataset_manager"):
             opt_values['dataset_manager_name'] = \
                         arg_validation(arg, dataset_manager.DatasetManager)
-        elif opt in ("-l", "--loss"):
-            opt_values['loss'] = \
+        elif opt in ("-l", "--loss_name"):
+            opt_values['loss_name'] = \
                         arg_validation(arg, loss.Loss)
+        elif opt in ("-o", "--optimizer_name"):
+            opt_values['optimizer_name'] = \
+                        arg_validation(arg, optimizer.Optimizer)
     return opt_values
 
-def training(loss_op, learning_rate):
+def training(loss_op, optimizer, learning_rate):
     """Sets up the training Ops.
 
     Creates a summarizer to track the loss over time in TensorBoard.
@@ -123,8 +125,6 @@ def training(loss_op, learning_rate):
     """
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', tf.reduce_mean(loss_op))
-    # Create the gradient descent optimizer with the given learning rate.
-    optimizer = tf.train.AdamOptimizer(learning_rate)
     # Create a variable to track the global step.
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Use the optimizer to apply the gradients that minimize the loss
@@ -139,11 +139,13 @@ def run_training(opt_values):
     # Get architecture, dataset and loss name
     arch_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
-    loss_name = opt_values['loss'] # TODO: loss_name
+    loss_name = opt_values['loss_name'] # TODO: loss_name
+    optimizer_name = opt_values['optimizer_name']
     # Get implementations
     architecture_imp = get_implementation(architecture.Architecture, arch_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
+    optimizer_imp = get_implementation(optimizer.Optimizer, optimizer_name)
 
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
@@ -155,7 +157,7 @@ def run_training(opt_values):
         print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         print(loss_op)
-        train_op = training(loss_op, 10**(-4))
+        train_op = training(loss_op, optimizer_imp, 10**(-4))
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
         summaries_dir = "Summaries/" + dataset_name + "_" + arch_name + "_" + loss_name +\
@@ -239,6 +241,7 @@ def log(opt_values): #maybe in another module?
 
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
+    print (OPT_VALUES)
     EXECUTION_MODE = OPT_VALUES['execution_mode']
     if EXECUTION_MODE == 'train':
         run_training(OPT_VALUES)
