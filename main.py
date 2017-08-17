@@ -55,7 +55,20 @@ def is_subclass(parent_class, child_class_name):
 
 
 def arg_validation(arg, cla):
-    """Checks if the argument corresponds to a valid class.
+    """
+    Checks if the argument corresponds to a valid class.
+
+    This function checks in the subclasses of `cla` if a class with name equal to `arg` exists.
+    If `arg` is a name of a subclass it returns the arg. If `arg` is not found it shows a
+    a error message.
+
+
+    Args:
+        arg: child class name.
+        cla: parent class.
+
+    Returns:
+        arg: child class name.
     """
     if is_subclass(cla, arg):
         return arg
@@ -68,9 +81,14 @@ ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <los
 
 
 def process_args(argv):
-    """It checks and organizes the arguments in a dictionary.
+    """
+    It checks and organizes the arguments in a dictionary.
 
+    Args:
+        argv: list containing all parameters and arguments.
 
+    Returns:
+        opt_values: dictionary containing parameters as keys and arguments as values.
     """
 
     try:
@@ -112,6 +130,8 @@ def process_args(argv):
             else:
                 print(arg + " is not a valid folder path.")
                 sys.exit(2)
+
+    check_needed_parameters(opt_values)
     return opt_values
 
 def training(loss_op, learning_rate):
@@ -141,6 +161,15 @@ def training(loss_op, learning_rate):
     return train_op, global_step
 
 def check_needed_parameters(parameter_values):
+    """This function checks if the needed are given in the main call.
+
+    According with the execution mode this function checks if the needed
+    parameteres were defined. If one parameter is missing, this function
+    gives an output with the missing parameter and the chosen mode.
+
+    Args:
+        parameter_values: Dictionary containing all paramenter names and arguments.
+    """
     if parameter_values["execution_mode"] == "train":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
     if parameter_values["execution_mode"] == "restore":
@@ -153,7 +182,13 @@ def check_needed_parameters(parameter_values):
             sys.exit(2)
 
 def run_training(opt_values):
-    """Runs the traing given some options
+    """
+    Runs the training
+
+    This function is responsible for instanciating dataset, architecture and loss.abs
+
+    Args:
+        opt_values: dictionary containing parameters as keys and arguments as values.
 
     """
     # Get architecture, dataset and loss name
@@ -167,8 +202,8 @@ def run_training(opt_values):
     log(opt_values)
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
-        
-        EXECUTION_MODE = opt_values["execution_mode"]
+
+        execution_mode = opt_values["execution_mode"]
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
         architecture_output = architecture_imp.prediction(architecture_input, training=True)
@@ -181,11 +216,11 @@ def run_training(opt_values):
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
 
-        if opt_values["execution_mode"] == "train":
+        if execution_mode == "train":
             execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
                         "_" + time_str
             os.makedirs(execution_dir)
-        elif opt_values["execution_mode"] == "restore":
+        elif execution_mode == "restore":
             execution_dir = opt_values["execution_path"]
 
         model_dir = os.path.join(execution_dir, "model")
@@ -216,7 +251,7 @@ def run_training(opt_values):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         try:
-            if opt_values["execution_mode"] == "restore":
+            if execution_mode == "restore":
                 # Restore variables from disk.
                 model_file_path = os.path.join(model_dir, "model.ckpt")
                 saver.restore(sess, model_file_path)
@@ -281,14 +316,19 @@ def log(opt_values): #maybe in another module?
     log_dir = os.path.join(opt_values["execution_path"], "logs")
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)
-    #log_dir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
     log_path = os.path.join(log_dir, log_name)
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
 
+def main(opt_values):
+    """
+    Main function.
+    """
+    execution_mode = opt_values['execution_mode']
+    if execution_mode in ('train', 'restore'):
+        run_training(opt_values)
+
+
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
-    EXECUTION_MODE = OPT_VALUES['execution_mode']
-    check_needed_parameters(OPT_VALUES)
-    if EXECUTION_MODE in ('train', 'restore'):
-        run_training(OPT_VALUES)
+    main(OPT_VALUES)
