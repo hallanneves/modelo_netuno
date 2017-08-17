@@ -164,7 +164,14 @@ def run_training(opt_values):
     architecture_imp = get_implementation(architecture.Architecture, arch_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
-    log(opt_values)
+    time_str = time.strftime("%Y-%m-%d_%H:%M")
+    if opt_values["execution_mode"] == "train":
+        execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+                    "_" + time_str
+        os.makedirs(execution_dir)
+    elif opt_values["execution_mode"] == "restore":
+        execution_dir = opt_values["execution_path"]
+    log(opt_values, execution_dir)
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
         
@@ -179,15 +186,6 @@ def run_training(opt_values):
         print(loss_op)
         train_op, global_step = training(loss_op, 10**(-4))
         # Create summary
-        time_str = time.strftime("%Y-%m-%d_%H:%M")
-
-        if opt_values["execution_mode"] == "train":
-            execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
-                        "_" + time_str
-            os.makedirs(execution_dir)
-        elif opt_values["execution_mode"] == "restore":
-            execution_dir = opt_values["execution_path"]
-
         model_dir = os.path.join(execution_dir, "model")
         if not os.path.isdir(model_dir):
             os.makedirs(model_dir)
@@ -253,7 +251,18 @@ def run_training(opt_values):
         coord.join(threads)
         sess.close()
 
-def log(opt_values): #maybe in another module?
+def log(opt_values, execution_dir): #maybe in another module?
+    """
+    Stores a .json logfile in execution_dir/logs,
+    based on the execution options opt_values.
+
+    Args:
+        opt_values: dictionary with the command line arguments of main.py.
+        execution_dir: the directory regarding the execution to log.
+    
+    Returns:
+        Nothing.
+    """
     # Get architecture, dataset and loss name
     architecture_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
@@ -278,10 +287,9 @@ def log(opt_values): #maybe in another module?
     json_data["dataset_name"] = dataset_name
     json_data["loss_name"] = loss_name
 
-    log_dir = os.path.join(opt_values["execution_path"], "logs")
+    log_dir = os.path.join(execution_dir, "logs")
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)
-    #log_dir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
     log_path = os.path.join(log_dir, log_name)
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
