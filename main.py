@@ -54,7 +54,20 @@ def is_subclass(parent_class, child_class_name):
 
 
 def arg_validation(arg, cla):
-    """Checks if the argument corresponds to a valid class.
+    """
+    Checks if the argument corresponds to a valid class.
+
+    This function checks in the subclasses of `cla` if a class with name equal to `arg` exists.
+    If `arg` is a name of a subclass it returns the arg. If `arg` is not found it shows a
+    a error message.
+
+
+    Args:
+        arg: child class name.
+        cla: parent class.
+
+    Returns:
+        arg: child class name.
     """
     if is_subclass(cla, arg):
         return arg
@@ -63,17 +76,23 @@ def arg_validation(arg, cla):
         sys.exit(2)
 
 
-ERROR_MSG = 'main.py -m <execution_mode> -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
+ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
 def process_args(argv):
-    """It checks and organizes the arguments in a dictionary.
+    """
+    It checks and organizes the arguments in a dictionary.
 
+    Args:
+        argv: list containing all parameters and arguments.
 
+    Returns:
+        opt_values: dictionary containing parameters as keys and arguments as values.
     """
 
     try:
         long_opts = ["help", "architecture=", "dataset=",
-                     "dataset_manager=", "loss=", "optimizer="]
-        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:o:", long_opts)
+                     "dataset_manager=", "loss=", "execution_path=",
+                     "optimizer="]
+        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:o:", long_opts)
         if opts == []:
             print(ERROR_MSG)
             sys.exit(2)
@@ -103,9 +122,17 @@ def process_args(argv):
         elif opt in ("-l", "--loss_name"):
             opt_values['loss_name'] = \
                         arg_validation(arg, loss.Loss)
+        elif opt in ("-p", "--execution_path"):
+            if os.path.isdir(arg):
+                opt_values['execution_path'] = arg
+            else:
+                print(arg + " is not a valid folder path.")
+                sys.exit(2)
         elif opt in ("-o", "--optimizer_name"):
             opt_values['optimizer_name'] = \
                         arg_validation(arg, optimizer.Optimizer)
+        
+    check_needed_parameters(opt_values)
     return opt_values
 
 def training(loss_op, optimizer, learning_rate):
@@ -130,25 +157,61 @@ def training(loss_op, optimizer, learning_rate):
     # Use the optimizer to apply the gradients that minimize the loss
     # (and also increment the global step counter) as a single training step.
     train_op = optimizer.minimize(loss_op, global_step=global_step)
-    return train_op
+    return train_op, global_step
+
+def check_needed_parameters(parameter_values):
+    """This function checks if the needed are given in the main call.
+
+    According with the execution mode this function checks if the needed
+    parameteres were defined. If one parameter is missing, this function
+    gives an output with the missing parameter and the chosen mode.
+
+    Args:
+        parameter_values: Dictionary containing all paramenter names and arguments.
+    """
+    if parameter_values["execution_mode"] == "train":
+        needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
+    if parameter_values["execution_mode"] == "restore":
+        needed_parameters = ["architecture_name", "dataset_name", "loss_name",
+                             "execution_path"]
+    for parameter in needed_parameters:
+        if parameter not in parameter_values:
+            print("Parameters list must contain an " + parameter + " in the " +\
+                  parameter_values["execution_mode"]+" mode.")
+            sys.exit(2)
 
 def run_training(opt_values):
-    """Runs the traing given some options
+    """
+    Runs the training
+
+    This function is responsible for instanciating dataset, architecture and loss.abs
+
+    Args:
+        opt_values: dictionary containing parameters as keys and arguments as values.
 
     """
     # Get architecture, dataset and loss name
     arch_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
-    loss_name = opt_values['loss_name'] # TODO: loss_name
+    loss_name = opt_values['loss_name']
     optimizer_name = opt_values['optimizer_name']
     # Get implementations
     architecture_imp = get_implementation(architecture.Architecture, arch_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
     optimizer_imp = get_implementation(optimizer.Optimizer, optimizer_name)
-
+    time_str = time.strftime("%Y-%m-%d_%H:%M")
+    if opt_values["execution_mode"] == "train":
+        execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+                    "_" + time_str
+        os.makedirs(execution_dir)
+    elif opt_values["execution_mode"] == "restore":
+        execution_dir = opt_values["execution_path"]
+    log(opt_values, execution_dir)
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
+
+        execution_mode = opt_values["execution_mode"]
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
         architecture_output = architecture_imp.prediction(architecture_input, training=True)
@@ -157,20 +220,33 @@ def run_training(opt_values):
         print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         print(loss_op)
-        train_op = training(loss_op, optimizer_imp, 10**(-4))
+        train_op, global_step = training(loss_op, optimizer_imp, 10**(-4))
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
-        summaries_dir = "Summaries/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+
+        if execution_mode == "train":
+            execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
                         "_" + time_str
-        os.makedirs(summaries_dir)
-        # Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+            os.makedirs(execution_dir)
+        elif execution_mode == "restore":
+            execution_dir = opt_values["execution_path"]
+
+        model_dir = os.path.join(execution_dir, "model")
+        if not os.path.isdir(model_dir):
+            os.makedirs(model_dir)
+        summary_dir = os.path.join(execution_dir, "summary")
+        if not os.path.isdir(summary_dir):
+            os.makedirs(summary_dir)
+
+        # Merge all the summaries and write
         merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(summaries_dir + '/train')
-        test_writer = tf.summary.FileWriter(summaries_dir + '/test')
+        train_writer = tf.summary.FileWriter(summary_dir + '/train')
+        test_writer = tf.summary.FileWriter(summary_dir + '/test')
         # The op for initializing the variables.
         init_op = tf.group(tf.global_variables_initializer(),
                            tf.local_variables_initializer())
-
+        # Add ops to save and restore all the variables.
+        saver = tf.train.Saver()
         # Create a session for running operations in the Graph.
         sess = tf.Session()
 
@@ -183,7 +259,12 @@ def run_training(opt_values):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         try:
-            step = 0
+            if execution_mode == "restore":
+                # Restore variables from disk.
+                model_file_path = os.path.join(model_dir, "model.ckpt")
+                saver.restore(sess, model_file_path)
+                print("Model restored.")
+            step = sess.run(global_step)
             while not coord.should_stop():
                 start_time = time.time()
 
@@ -200,6 +281,9 @@ def run_training(opt_values):
                 if step % 100 == 0:
                     print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),
                                                                duration))
+                    # Save the variables to disk.
+                    save_path = saver.save(sess, model_dir + "/model.ckpt")
+                    print("Model saved in file: %s" % save_path)
                 step += 1
         except tf.errors.OutOfRangeError:
             print('Done training for %d epochs, %d steps.' %
@@ -212,36 +296,58 @@ def run_training(opt_values):
         coord.join(threads)
         sess.close()
 
-def log(opt_values): #maybe in another module?
+def log(opt_values, execution_dir): #maybe in another module?
+    """
+    Stores a .json logfile in execution_dir/logs,
+    based on the execution options opt_values.
+
+    Args:
+        opt_values: dictionary with the command line arguments of main.py.
+        execution_dir: the directory regarding the execution to log.
+    
+    Returns:
+        Nothing.
+    """
     # Get architecture, dataset and loss name
-    arch_nm = opt_values['architecture_name']
+    architecture_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
-    loss_name = opt_values['loss']
+    loss_name = opt_values['loss_name']
     # Get implementations
-    architecture_imp = get_implementation(architecture.Architecture, arch_nm)
+    architecture_imp = get_implementation(architecture.Architecture, architecture_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
 
-    today = time.strftime("%Y-%m-%d %H:%M")
-    log_name = today + '_' + arch_nm + '_' + dataset_name + '_' +\
-            loss_name + '_' + opt_values['execution_mode'] + '.json'
-    json_data = {
-        "architecture": architecture_imp.config_dict,
-        "dataset": dataset_imp.config_dict,
-        "loss": loss_imp.config_dict,
-        "execution_mode": opt_values['execution_mode']}
-    json_data["architecture"]["name"] = arch_nm
-    json_data["dataset"]["name"] = dataset_name
-    json_data["loss"]["name"] = loss_name
+    today = time.strftime("%Y-%m-%d_%H:%M")
+    log_name = dataset_name + "_" + architecture_name + "_" + loss_name + "_" +\
+               opt_values['execution_mode'] + "_" + today +".json"
+    json_data = {}
+    if hasattr(architecture_imp, 'config_dict'):
+        json_data["architecture"] = architecture_imp.config_dict
+    if hasattr(loss_imp, 'config_dict'):
+        json_data["loss"] = loss_imp.config_dict
+    if hasattr(dataset_imp, 'config_dict'):
+        json_data["architecture"] = dataset_imp.config_dict
+    json_data["execution_mode"] = opt_values['execution_mode']
+    json_data["architecture_name"] = architecture_name
+    json_data["dataset_name"] = dataset_name
+    json_data["loss_name"] = loss_name
 
-    logdir = os.path.abspath("Logs/") #TODO(Rael): Use options instead
-    log_path = os.path.join(logdir, log_name)
+    log_dir = os.path.join(execution_dir, "logs")
+    if not os.path.isdir(log_dir):
+        os.makedirs(log_dir)
+    log_path = os.path.join(log_dir, log_name)
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
 
+def main(opt_values):
+    """
+    Main function.
+    """
+    execution_mode = opt_values['execution_mode']
+    if execution_mode in ('train', 'restore'):
+        run_training(opt_values)
+
+
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
-    print (OPT_VALUES)
-    EXECUTION_MODE = OPT_VALUES['execution_mode']
-    if EXECUTION_MODE == 'train':
-        run_training(OPT_VALUES)
+    main(OPT_VALUES)

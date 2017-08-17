@@ -101,11 +101,15 @@ ENV/
 .mypy_cache/
 
 #local_data
-Models/*
-!Models/.gitkeep
-Summaries/*
-!Summaries/.gitkeep
-Logs/*
-!Logs/.gitkeep
+!Executions/.gitkeep
+Executions/*
+
+#Models/*
+#!Models/.gitkeep
+#Summaries/*
+#!Summaries/.gitkeep
+#Logs/*
+#!Logs/.gitkeep
+
 Datasets/Data/*
 !Datasets/Data/.gitkeep

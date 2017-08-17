@@ -2,11 +2,14 @@ import os
 
 import tensorflow as tf
 
+import Datasets.ProjectDeepdive.simulator as simulator
+
 import dataset
 
 class DatasetTfRecords(dataset.Dataset):
     def __init__(self):
-        parameters_list = ["tfr_path", "input_size", "output_size"]
+        parameters_list = ["tfr_path", "input_size", "output_size", "turbidity_path",
+                           "turbidity_size", "range_min", "range_max"]
         self.open_config(parameters_list)
         self.batch_size = self.config_dict["batch_size"]
         self.input_size = self.config_dict["input_size"]
@@ -18,6 +21,14 @@ class DatasetTfRecords(dataset.Dataset):
         self.num_file = len(self.train_file)
         self.validation_file = [self.tfr_path + f for f in os.listdir(self.tfr_path)]
         self.num_files_val = len(self.validation_file)
+        #Simulator attributes
+        self.turbidity_path = self.config_dict["turbidity_path"]
+        self.turbidity_size = tuple(self.config_dict["turbidity_size"])
+        self.range_min = self.config_dict["range_min"]
+        self.range_max = self.config_dict["range_max"]
+        self.sess = tf.Session()
+        self.c, self.binf, self.range_array = simulator.acquireProperties(
+            self.turbidity_path, self.turbidity_size, self.batch_size, self.range_min, self.range_max, self.sess)
 
     def read_and_decode(self, filename_queue):
         reader = tf.TFRecordReader()
@@ -70,8 +81,7 @@ class DatasetTfRecords(dataset.Dataset):
             )
         depths = tf.reshape(depths, [self.batch_size] + self.output_size)
         images = tf.reshape(images, [self.batch_size] + self.input_size)
+        images = simulator.applyTurbidity(images, depths, self.c, self.binf, self.range_array)
         tf.summary.image("depth", depths)
         tf.summary.image("image", images)
-
-
         return images, depths
