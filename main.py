@@ -21,64 +21,7 @@ import loss
 import Losses
 import optimizer
 import Optimizers
-
-
-def get_implementation(parent_class, child_class_name):
-    """Returns a subclass instance.
-    It searchs in the subclasses of `parent_class` a class
-    named `child_class_name` and return a instance od this class
-    Args:
-        parent_class: parent class.
-        child_class_name: string containing the child class name.
-    Returns:
-        child_class: instance of child class. `None` if not found.
-    """
-    for child_class in parent_class.__subclasses__():
-        if child_class.__name__ == child_class_name:
-            return child_class()
-    return None
-
-def is_subclass(parent_class, child_class_name):
-    """Checks if the parent class has a child with a given name.
-
-    It searchs in the subclasses of `parent_class` a class
-    named `child_class_name`. Return True if found and False if not found.
-
-    Args:
-        parent_class: parent class.
-        child_class_name: string containing the child class name.
-
-    Returns:
-        True if found and False if not found.
-    """
-    for child_class in parent_class.__subclasses__():
-        if child_class.__name__ == child_class_name:
-            return True
-    return False
-
-
-def arg_validation(arg, cla):
-    """
-    Checks if the argument corresponds to a valid class.
-
-    This function checks in the subclasses of `cla` if a class with name equal to `arg` exists.
-    If `arg` is a name of a subclass it returns the arg. If `arg` is not found it shows a
-    a error message.
-
-
-    Args:
-        arg: child class name.
-        cla: parent class.
-
-    Returns:
-        arg: child class name.
-    """
-    if is_subclass(cla, arg):
-        return arg
-    else:
-        print(str(arg)+" is not a valid " + cla.__module__ + " name.")
-        sys.exit(2)
-
+import utils
 
 ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
 def process_args(argv):
@@ -117,17 +60,17 @@ def process_args(argv):
                 sys.exit(2)
         elif opt in ("-a", "--architecture"):
             opt_values['architecture_name'] = \
-                                arg_validation(arg, architecture.Architecture)
+                                utils.arg_validation(arg, architecture.Architecture)
         elif opt in ("-d", "--dataset"):
-            opt_values['dataset_name'] = arg_validation(arg, dataset.Dataset)
+            opt_values['dataset_name'] = utils.arg_validation(arg, dataset.Dataset)
         elif opt in ("-g", "--dataset_manager"):
             opt_values['dataset_manager_name'] = \
-                        arg_validation(arg, dataset_manager.DatasetManager)
+                        utils.arg_validation(arg, dataset_manager.DatasetManager)
         elif opt in ("-e", "--evaluate"):
-            opt_values['evaluate_name'] = arg_validation(arg, evaluate.Evaluate)
+            opt_values['evaluate_name'] = utils.arg_validation(arg, evaluate.Evaluate)
         elif opt in ("-l", "--loss_name"):
             opt_values['loss_name'] = \
-                        arg_validation(arg, loss.Loss)
+                        utils.arg_validation(arg, loss.Loss)
         elif opt in ("-p", "--execution_path"):
             if os.path.isdir(arg):
                 opt_values['execution_path'] = arg
@@ -142,33 +85,10 @@ def process_args(argv):
                 sys.exit(2)
         elif opt in ("-o", "--optimizer"):
             opt_values['optimizer_name'] = \
-                        arg_validation(arg, optimizer.Optimizer)
+                        utils.arg_validation(arg, optimizer.Optimizer)
 
     check_needed_parameters(opt_values)
     return opt_values
-
-def training(loss_op, optimizer):
-    """Sets up the training Ops.
-
-    Creates a summarizer to track the loss over time in TensorBoard.
-    Creates an optimizer and applies the gradients to all trainable variables.
-    The Op returned by this function is what must be passed to the
-    `sess.run()` call to cause the model to train.
-
-    Args:
-        loss: Loss tensor, from loss().
-
-    Returns:
-        train_op: The Op for training.
-    """
-    # Add a scalar summary for the snapshot loss.
-    tf.summary.scalar('loss', tf.reduce_mean(loss_op))
-    # Create a variable to track the global step.
-    global_step = tf.Variable(0, name='global_step', trainable=False)
-    # Use the optimizer to apply the gradients that minimize the loss
-    # (and also increment the global step counter) as a single training step.
-    train_op = optimizer.minimize(loss_op, global_step=global_step)
-    return train_op, global_step
 
 def check_needed_parameters(parameter_values):
     """This function checks if the needed are given in the main call.
@@ -198,6 +118,31 @@ def check_needed_parameters(parameter_values):
                   parameter_values["execution_mode"]+" mode.")
             sys.exit(2)
 
+def training(loss_op, optimizer_imp):
+    """Sets up the training Ops.
+
+    Creates a summarizer to track the loss over time in TensorBoard.
+    Creates an optimizer and applies the gradients to all trainable variables.
+    The Op returned by this function is what must be passed to the
+    `sess.run()` call to cause the model to train.
+
+    Args:
+        loss_op: Loss tensor, from loss().
+        optimizer_imp: optmizer instance.
+
+    Returns:
+        train_op: The Op for training.
+    """
+    # Add a scalar summary for the snapshot loss.
+    tf.summary.scalar('loss', tf.reduce_mean(loss_op))
+    # Create a variable to track the global step.
+    global_step = tf.Variable(0, name='global_step', trainable=False)
+    # Use the optimizer to apply the gradients that minimize the loss
+    # (and also increment the global step counter) as a single training step.
+    train_op = optimizer_imp.minimize(loss_op, global_step=global_step)
+    return train_op, global_step
+
+
 def run_training(opt_values):
     """
     Runs the training
@@ -214,10 +159,10 @@ def run_training(opt_values):
     loss_name = opt_values['loss_name']
     optimizer_name = opt_values['optimizer_name']
     # Get implementations
-    architecture_imp = get_implementation(architecture.Architecture, arch_name)
-    dataset_imp = get_implementation(dataset.Dataset, dataset_name)
-    loss_imp = get_implementation(loss.Loss, loss_name)
-    optimizer_imp = get_implementation(optimizer.Optimizer, optimizer_name)
+    architecture_imp = utils.get_implementation(architecture.Architecture, arch_name)
+    dataset_imp = utils.get_implementation(dataset.Dataset, dataset_name)
+    loss_imp = utils.get_implementation(loss.Loss, loss_name)
+    optimizer_imp = utils.get_implementation(optimizer.Optimizer, optimizer_name)
     time_str = time.strftime("%Y-%m-%d_%H:%M")
     if opt_values["execution_mode"] == "train":
         execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
@@ -318,7 +263,7 @@ def log(opt_values, execution_dir): #maybe in another module?
     Args:
         opt_values: dictionary with the command line arguments of main.py.
         execution_dir: the directory regarding the execution to log.
-    
+
     Returns:
         Nothing.
     """
@@ -327,9 +272,9 @@ def log(opt_values, execution_dir): #maybe in another module?
     dataset_name = opt_values['dataset_name']
     loss_name = opt_values['loss_name']
     # Get implementations
-    architecture_imp = get_implementation(architecture.Architecture, architecture_name)
-    dataset_imp = get_implementation(dataset.Dataset, dataset_name)
-    loss_imp = get_implementation(loss.Loss, loss_name)
+    architecture_imp = utils.get_implementation(architecture.Architecture, architecture_name)
+    dataset_imp = utils.get_implementation(dataset.Dataset, dataset_name)
+    loss_imp = utils.get_implementation(loss.Loss, loss_name)
 
     today = time.strftime("%Y-%m-%d_%H:%M")
     log_name = dataset_name + "_" + architecture_name + "_" + loss_name + "_" +\
@@ -358,9 +303,9 @@ def run_evaluate(opt_values):
     This function performs the evaluation.
     """
     eval_name = opt_values['evaluate_name']
-    evaluate_imp = get_implementation(evaluate.Evaluate, eval_name)
+    evaluate_imp = utils.get_implementation(evaluate.Evaluate, eval_name)
     arch_name = opt_values['architecture_name']
-    architecture_imp = get_implementation(architecture.Architecture, arch_name)
+    architecture_imp = utils.get_implementation(architecture.Architecture, arch_name)
     evaluate_imp.eval(opt_values, architecture_imp)
 
 
