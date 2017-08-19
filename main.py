@@ -1,22 +1,27 @@
 import getopt
+from PIL import Image
+import glob
+import json
+import os
 import sys
 import time
-import os
 
-import json
 import numpy as np
 import tensorflow as tf
 
 import architecture
 import Architectures
-import optimizer
-import Optimizers
+import evaluate
+import Evaluates
 import dataset
 import dataset_manager
 import DatasetManagers
 import Datasets
 import loss
 import Losses
+import optimizer
+import Optimizers
+
 
 def get_implementation(parent_class, child_class_name):
     """Returns a subclass instance.
@@ -29,7 +34,6 @@ def get_implementation(parent_class, child_class_name):
         child_class: instance of child class. `None` if not found.
     """
     for child_class in parent_class.__subclasses__():
-        print (child_class.__name__)
         if child_class.__name__ == child_class_name:
             return child_class()
     return None
@@ -91,8 +95,8 @@ def process_args(argv):
     try:
         long_opts = ["help", "architecture=", "dataset=",
                      "dataset_manager=", "loss=", "execution_path=",
-                     "optimizer="]
-        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:o:", long_opts)
+                     "optimizer=", "evaluate_path=", "evaluate="]
+        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:o:e:", long_opts)
         if opts == []:
             print(ERROR_MSG)
             sys.exit(2)
@@ -119,6 +123,8 @@ def process_args(argv):
         elif opt in ("-g", "--dataset_manager"):
             opt_values['dataset_manager_name'] = \
                         arg_validation(arg, dataset_manager.DatasetManager)
+        elif opt in ("-e", "--evaluate"):
+            opt_values['evaluate_name'] = arg_validation(arg, evaluate.Evaluate)
         elif opt in ("-l", "--loss_name"):
             opt_values['loss_name'] = \
                         arg_validation(arg, loss.Loss)
@@ -128,14 +134,20 @@ def process_args(argv):
             else:
                 print(arg + " is not a valid folder path.")
                 sys.exit(2)
-        elif opt in ("-o", "--optimizer_name"):
+        elif opt == "--evaluate_path":
+            if os.path.isdir(arg):
+                opt_values['evaluate_path'] = arg
+            else:
+                print(arg + " is not a valid folder path.")
+                sys.exit(2)
+        elif opt in ("-o", "--optimizer"):
             opt_values['optimizer_name'] = \
                         arg_validation(arg, optimizer.Optimizer)
-        
+
     check_needed_parameters(opt_values)
     return opt_values
 
-def training(loss_op, optimizer, learning_rate):
+def training(loss_op, optimizer):
     """Sets up the training Ops.
 
     Creates a summarizer to track the loss over time in TensorBoard.
@@ -145,7 +157,6 @@ def training(loss_op, optimizer, learning_rate):
 
     Args:
         loss: Loss tensor, from loss().
-        learning_rate: The learning rate to use for gradient descent.
 
     Returns:
         train_op: The Op for training.
@@ -171,9 +182,16 @@ def check_needed_parameters(parameter_values):
     """
     if parameter_values["execution_mode"] == "train":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
-    if parameter_values["execution_mode"] == "restore":
+    elif parameter_values["execution_mode"] == "restore":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name",
                              "execution_path"]
+    elif parameter_values["execution_mode"] == "evaluate":
+        needed_parameters = ["architecture_name", "execution_path", "evaluate_path",
+                             "evaluate_name"]
+    else:
+        print("Parameters list must contain an execution_mode.")
+        sys.exit(2)
+
     for parameter in needed_parameters:
         if parameter not in parameter_values:
             print("Parameters list must contain an " + parameter + " in the " +\
@@ -215,12 +233,8 @@ def run_training(opt_values):
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
         architecture_output = architecture_imp.prediction(architecture_input, training=True)
-        print(target_output)
-        print(architecture_output)
-        print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
-        print(loss_op)
-        train_op, global_step = training(loss_op, optimizer_imp, 10**(-4))
+        train_op, global_step = training(loss_op, optimizer_imp)
         # Create summary
         time_str = time.strftime("%Y-%m-%d_%H:%M")
 
@@ -339,6 +353,18 @@ def log(opt_values, execution_dir): #maybe in another module?
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
 
+def run_evaluate(opt_values):
+    """
+    This function performs the evaluation.
+    """
+    eval_name = opt_values['evaluate_name']
+    evaluate_imp = get_implementation(evaluate.Evaluate, eval_name)
+    arch_name = opt_values['architecture_name']
+    architecture_imp = get_implementation(architecture.Architecture, arch_name)
+    evaluate_imp.eval(opt_values, architecture_imp)
+
+
+
 def main(opt_values):
     """
     Main function.
@@ -346,6 +372,8 @@ def main(opt_values):
     execution_mode = opt_values['execution_mode']
     if execution_mode in ('train', 'restore'):
         run_training(opt_values)
+    elif execution_mode == 'evaluate':
+        run_evaluate(opt_values)
 
 
 if __name__ == "__main__":
