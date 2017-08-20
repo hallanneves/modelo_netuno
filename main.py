@@ -101,9 +101,9 @@ def check_needed_parameters(parameter_values):
         parameter_values: Dictionary containing all paramenter names and arguments.
     """
     if parameter_values["execution_mode"] == "train":
-        needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
+        needed_parameters = ["architecture_name", "dataset_name", "loss_name", "optimizer_name"]
     elif parameter_values["execution_mode"] == "restore":
-        needed_parameters = ["architecture_name", "dataset_name", "loss_name",
+        needed_parameters = ["architecture_name", "dataset_name", "loss_name", "optimizer_name",
                              "execution_path"]
     elif parameter_values["execution_mode"] == "evaluate":
         needed_parameters = ["architecture_name", "execution_path", "evaluate_path",
@@ -181,19 +181,10 @@ def run_training(opt_values):
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         train_op, global_step = training(loss_op, optimizer_imp)
         # Create summary
-        time_str = time.strftime("%Y-%m-%d_%H:%M")
-
-        if execution_mode == "train":
-            execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
-                        "_" + time_str
-            os.makedirs(execution_dir)
-        elif execution_mode == "restore":
-            execution_dir = opt_values["execution_path"]
-
-        model_dir = os.path.join(execution_dir, "model")
+        model_dir = os.path.join(execution_dir, "Model")
         if not os.path.isdir(model_dir):
             os.makedirs(model_dir)
-        summary_dir = os.path.join(execution_dir, "summary")
+        summary_dir = os.path.join(execution_dir, "Summary")
         if not os.path.isdir(summary_dir):
             os.makedirs(summary_dir)
 
@@ -291,7 +282,7 @@ def log(opt_values, execution_dir): #maybe in another module?
     json_data["dataset_name"] = dataset_name
     json_data["loss_name"] = loss_name
 
-    log_dir = os.path.join(execution_dir, "logs")
+    log_dir = os.path.join(execution_dir, "Logs")
     if not os.path.isdir(log_dir):
         os.makedirs(log_dir)
     log_path = os.path.join(log_dir, log_name)

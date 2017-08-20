@@ -1,3 +1,4 @@
+import sys
 def get_implementation(parent_class, child_class_name):
     """Returns a subclass instance.
     It searchs in the subclasses of `parent_class` a class
