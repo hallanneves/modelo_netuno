@@ -9,6 +9,8 @@ import tensorflow as tf
 
 import architecture
 import Architectures
+import optimizer
+import Optimizers
 import dataset
 import dataset_manager
 import DatasetManagers
@@ -16,21 +18,18 @@ import Datasets
 import loss
 import Losses
 
-
 def get_implementation(parent_class, child_class_name):
     """Returns a subclass instance.
-
     It searchs in the subclasses of `parent_class` a class
     named `child_class_name` and return a instance od this class
-
     Args:
         parent_class: parent class.
         child_class_name: string containing the child class name.
-
     Returns:
         child_class: instance of child class. `None` if not found.
     """
     for child_class in parent_class.__subclasses__():
+        print (child_class.__name__)
         if child_class.__name__ == child_class_name:
             return child_class()
     return None
@@ -55,7 +54,20 @@ def is_subclass(parent_class, child_class_name):
 
 
 def arg_validation(arg, cla):
-    """Checks if the argument corresponds to a valid class.
+    """
+    Checks if the argument corresponds to a valid class.
+
+    This function checks in the subclasses of `cla` if a class with name equal to `arg` exists.
+    If `arg` is a name of a subclass it returns the arg. If `arg` is not found it shows a
+    a error message.
+
+
+    Args:
+        arg: child class name.
+        cla: parent class.
+
+    Returns:
+        arg: child class name.
     """
     if is_subclass(cla, arg):
         return arg
@@ -64,19 +76,23 @@ def arg_validation(arg, cla):
         sys.exit(2)
 
 
-ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss>'
-
-
+ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
 def process_args(argv):
-    """It checks and organizes the arguments in a dictionary.
+    """
+    It checks and organizes the arguments in a dictionary.
 
+    Args:
+        argv: list containing all parameters and arguments.
 
+    Returns:
+        opt_values: dictionary containing parameters as keys and arguments as values.
     """
 
     try:
         long_opts = ["help", "architecture=", "dataset=",
-                     "dataset_manager=", "loss=", "execution_path="]
-        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:", long_opts)
+                     "dataset_manager=", "loss=", "execution_path=",
+                     "optimizer="]
+        opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:o:", long_opts)
         if opts == []:
             print(ERROR_MSG)
             sys.exit(2)
@@ -103,7 +119,7 @@ def process_args(argv):
         elif opt in ("-g", "--dataset_manager"):
             opt_values['dataset_manager_name'] = \
                         arg_validation(arg, dataset_manager.DatasetManager)
-        elif opt in ("-l", "--loss"):
+        elif opt in ("-l", "--loss_name"):
             opt_values['loss_name'] = \
                         arg_validation(arg, loss.Loss)
         elif opt in ("-p", "--execution_path"):
@@ -112,9 +128,14 @@ def process_args(argv):
             else:
                 print(arg + " is not a valid folder path.")
                 sys.exit(2)
+        elif opt in ("-o", "--optimizer_name"):
+            opt_values['optimizer_name'] = \
+                        arg_validation(arg, optimizer.Optimizer)
+        
+    check_needed_parameters(opt_values)
     return opt_values
 
-def training(loss_op, learning_rate):
+def training(loss_op, optimizer, learning_rate):
     """Sets up the training Ops.
 
     Creates a summarizer to track the loss over time in TensorBoard.
@@ -131,8 +152,6 @@ def training(loss_op, learning_rate):
     """
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', tf.reduce_mean(loss_op))
-    # Create the gradient descent optimizer with the given learning rate.
-    optimizer = tf.train.AdamOptimizer(learning_rate)
     # Create a variable to track the global step.
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Use the optimizer to apply the gradients that minimize the loss
@@ -141,6 +160,15 @@ def training(loss_op, learning_rate):
     return train_op, global_step
 
 def check_needed_parameters(parameter_values):
+    """This function checks if the needed are given in the main call.
+
+    According with the execution mode this function checks if the needed
+    parameteres were defined. If one parameter is missing, this function
+    gives an output with the missing parameter and the chosen mode.
+
+    Args:
+        parameter_values: Dictionary containing all paramenter names and arguments.
+    """
     if parameter_values["execution_mode"] == "train":
         needed_parameters = ["architecture_name", "dataset_name", "loss_name"]
     if parameter_values["execution_mode"] == "restore":
@@ -153,17 +181,25 @@ def check_needed_parameters(parameter_values):
             sys.exit(2)
 
 def run_training(opt_values):
-    """Runs the traing given some options
+    """
+    Runs the training
+
+    This function is responsible for instanciating dataset, architecture and loss.abs
+
+    Args:
+        opt_values: dictionary containing parameters as keys and arguments as values.
 
     """
     # Get architecture, dataset and loss name
     arch_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
     loss_name = opt_values['loss_name']
+    optimizer_name = opt_values['optimizer_name']
     # Get implementations
     architecture_imp = get_implementation(architecture.Architecture, arch_name)
     dataset_imp = get_implementation(dataset.Dataset, dataset_name)
     loss_imp = get_implementation(loss.Loss, loss_name)
+    optimizer_imp = get_implementation(optimizer.Optimizer, optimizer_name)
     time_str = time.strftime("%Y-%m-%d_%H:%M")
     if opt_values["execution_mode"] == "train":
         execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
@@ -174,8 +210,8 @@ def run_training(opt_values):
     log(opt_values, execution_dir)
     # Tell TensorFlow that the model will be built into the default Graph.
     with tf.Graph().as_default():
-        
-        EXECUTION_MODE = opt_values["execution_mode"]
+
+        execution_mode = opt_values["execution_mode"]
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
         architecture_output = architecture_imp.prediction(architecture_input, training=True)
@@ -184,8 +220,17 @@ def run_training(opt_values):
         print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         print(loss_op)
-        train_op, global_step = training(loss_op, 10**(-4))
+        train_op, global_step = training(loss_op, optimizer_imp, 10**(-4))
         # Create summary
+        time_str = time.strftime("%Y-%m-%d_%H:%M")
+
+        if execution_mode == "train":
+            execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
+                        "_" + time_str
+            os.makedirs(execution_dir)
+        elif execution_mode == "restore":
+            execution_dir = opt_values["execution_path"]
+
         model_dir = os.path.join(execution_dir, "model")
         if not os.path.isdir(model_dir):
             os.makedirs(model_dir)
@@ -214,7 +259,7 @@ def run_training(opt_values):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         try:
-            if opt_values["execution_mode"] == "restore":
+            if execution_mode == "restore":
                 # Restore variables from disk.
                 model_file_path = os.path.join(model_dir, "model.ckpt")
                 saver.restore(sess, model_file_path)
@@ -294,9 +339,15 @@ def log(opt_values, execution_dir): #maybe in another module?
     with open(log_path, 'w') as outfile:
         json.dump(json_data, outfile)
 
+def main(opt_values):
+    """
+    Main function.
+    """
+    execution_mode = opt_values['execution_mode']
+    if execution_mode in ('train', 'restore'):
+        run_training(opt_values)
+
+
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
-    EXECUTION_MODE = OPT_VALUES['execution_mode']
-    check_needed_parameters(OPT_VALUES)
-    if EXECUTION_MODE in ('train', 'restore'):
-        run_training(OPT_VALUES)
+    main(OPT_VALUES)

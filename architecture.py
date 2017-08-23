@@ -11,7 +11,7 @@ class Architecture(metaclass=abc.ABCMeta):
 
         Each architecture must implement this method. Depending on
         each diferent implementation the output shape varies. So
-        the loss must be chosen acoording withe achitecture
+        the loss must be chosen acoording with the achitecture
         implementation.
         In a similar way the architecture implementation depends on
         the dataset shape.
@@ -19,7 +19,7 @@ class Architecture(metaclass=abc.ABCMeta):
         Args:
             sample: networks input tensor
             training: boolean value indication if this prediction is
-            beeing used on training or not
+            being used on training or not
 
         Returns:
             achitecture output: networks output tensor
