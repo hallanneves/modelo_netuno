@@ -1,3 +1,4 @@
+#pylint: disable=E0611,E0401,C0325
 import os
 import random
 
@@ -14,6 +15,7 @@ class DatasetTransmission(dataset.Dataset):
         self.open_config(parameters_list)
         self.batch_size = self.config_dict["batch_size"]
         self.input_size = self.config_dict["input_size"]
+        self.patch_size = self.config_dict["patch_size"]
         self.input_size_prod = self.input_size[0] * self.input_size[1] * self.input_size[2]
         self.output_size = self.config_dict["output_size"]
         self.output_size_prod = self.output_size[0] * self.output_size[1] * self.output_size[2]
@@ -46,18 +48,15 @@ class DatasetTransmission(dataset.Dataset):
     def next_batch_train(self):
         """
         args:
-            train:
-                true: training
-                false: validation
             batch_size:
                 number of examples per returned batch
             num_epochs:
                 number of time to read the input data
 
         returns:
-            a tuple(image, depths) where:
-                image is a float tensor with shape [batch size] + input_size
-                depth is a float tensor with shape [batch size] + depth_size
+            a tuple(image, transmissions) where:
+                image is a float tensor with shape [batch size] + patch_size
+                transmissions is a float tensor with shape [batch size]
         """
 
         filename = self.train_file
@@ -68,22 +67,24 @@ class DatasetTransmission(dataset.Dataset):
 
         image = self.read_and_decode(filename_queue)
 
-        images, = tf.train.shuffle_batch(
+        images = tf.train.shuffle_batch(
             [image], batch_size=self.config_dict["batch_size"],
             num_threads=self.config_dict["num_threads"],
             capacity=100+ 3 * self.config_dict["batch_size"],
             min_after_dequeue=100
             )
-        transmissions = tf.random_uniform([self.batch_size], minval=0.05, maxval=1)
         images = tf.reshape(images, [self.batch_size] + self.input_size)
 
         size_x = self.config_dict['patch_size'][0]
         size_y = self.config_dict['patch_size'][1]
         offset_x = random.randint(0, self.input_size[0] - size_x - 1)
         offset_y = random.randint(0, self.input_size[0] - size_y - 1)
-        
+
         images = images[:, offset_x:offset_x + size_x, offset_y:offset_y+size_y]
+        #TODO(Rael): minval/maxval podem ficar no config
+        transmissions = tf.random_uniform([self.batch_size], minval=0.05, maxval=1)
         images = simulator.applyTurbidityTransmission(images, self.binf, transmissions)
-        tf.summary.scalar("transmissions", transmissions)
+        print(images.shape)
+        print(transmissions.shape)
         tf.summary.image("image", images)
         return images, transmissions

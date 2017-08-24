@@ -10,5 +10,4 @@ class MSE(loss.Loss):
 
     def evaluate(self, architecture_output, target_output):
         return tf.reduce_mean(
-            tf.squared_difference(architecture_output, target_output),
-            reduction_indices=[1, 2, 3])
+            tf.squared_difference(architecture_output, target_output))
