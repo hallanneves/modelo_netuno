@@ -11,7 +11,7 @@ import dataset
 class DatasetTransmission(dataset.Dataset):
     def __init__(self):
         parameters_list = ["tfr_path", "input_size", "output_size", "turbidity_path",
-                           "turbidity_size", "patch_size"]
+                           "turbidity_size", "patch_size", "trans_minval", "trans_maxval"]
         self.open_config(parameters_list)
         self.batch_size = self.config_dict["batch_size"]
         self.input_size = self.config_dict["input_size"]
@@ -81,8 +81,9 @@ class DatasetTransmission(dataset.Dataset):
         offset_y = random.randint(0, self.input_size[0] - size_y - 1)
 
         images = images[:, offset_x:offset_x + size_x, offset_y:offset_y+size_y]
-        #TODO(Rael): minval/maxval podem ficar no config
-        transmissions = tf.random_uniform([self.batch_size], minval=0.05, maxval=1)
+        minval = self.config_dict["trans_minval"]
+        maxval = self.config_dict["trans_maxval"]
+        transmissions = tf.random_uniform([self.batch_size], minval=minval, maxval=maxval)
         images = simulator.applyTurbidityTransmission(images, self.binf, transmissions)
         print(images.shape)
         print(transmissions.shape)
