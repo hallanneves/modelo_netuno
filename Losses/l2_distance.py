@@ -5,5 +5,5 @@ class L2Distance(loss.Loss):
         parameters_list = []
         self.open_config(parameters_list)
     def evaluate(self, architecture_output, target_output):
-        return tf.sqrt(tf.reduce_sum(tf.squared_difference
+        return tf.sqrt(tf.reduce_mean(tf.squared_difference
                                      (architecture_output, target_output)))
