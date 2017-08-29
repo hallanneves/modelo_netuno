@@ -150,13 +150,15 @@ def training(loss_op, optimizer, learning_rate):
     Returns:
         train_op: The Op for training.
     """
+    # Get variable list
+    network_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="network")
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', tf.reduce_mean(loss_op))
     # Create a variable to track the global step.
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Use the optimizer to apply the gradients that minimize the loss
     # (and also increment the global step counter) as a single training step.
-    train_op = optimizer.minimize(loss_op, global_step=global_step)
+    train_op = optimizer.minimize(loss_op, global_step=global_step, var_list=network_vars)
     return train_op, global_step
 
 def check_needed_parameters(parameter_values):
@@ -214,11 +216,14 @@ def run_training(opt_values):
         execution_mode = opt_values["execution_mode"]
         # Input and target output pairs.
         architecture_input, target_output = dataset_imp.next_batch_train()
-        architecture_output = architecture_imp.prediction(architecture_input, training=True)
+        with tf.variable_scope("network"):
+            architecture_output = architecture_imp.prediction(architecture_input, training=True)
         print(target_output)
         print(architecture_output)
         print(architecture_input)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
+        if loss_imp.trainable():
+            loss_tr = loss_imp.train(optimizer_imp)
         print(loss_op)
         train_op, global_step = training(loss_op, optimizer_imp, 10**(-4))
         # Create summary
@@ -274,7 +279,11 @@ def run_training(opt_values):
                 # of your ops or variables, you may include them in
                 # the list passed to sess.run() and the value tensors
                 # will be returned in the tuple from the call.
-                summary, loss_value, _ = sess.run([merged, loss_op, train_op])
+                if loss_imp.trainable():
+                    summary, loss_value, _, _ = sess.run([merged, loss_op, train_op, loss_tr])
+                else:
+                    summary, loss_value, _ = sess.run([merged, loss_op, train_op])
+                    
                 duration = time.time() - start_time
                 train_writer.add_summary(summary, step)
                 # Print an overview fairly often.

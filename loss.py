@@ -22,6 +22,11 @@ class Loss(metaclass=abc.ABCMeta):
         """
         pass
 
+    def train(self):
+        pass
+
+    def trainable(self):
+        return False
     
     def verify_config(self, parameters_list):
         for parameter in parameters_list:
