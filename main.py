@@ -134,14 +134,14 @@ def training(loss_op, optimizer_imp):
         train_op: The Op for training.
     """
     # Get variable list
-    network_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="network")
+    model_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="model")
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', loss_op)
     # Create a variable to track the global step.
     global_step = tf.Variable(0, name='global_step', trainable=False)
     # Use the optimizer to apply the gradients that minimize the loss
     # (and also increment the global step counter) as a single training step.
-    train_op = optimizer_imp.minimize(loss_op, global_step=global_step)
+    train_op = optimizer_imp.minimize(loss_op, global_step=global_step, var_list=model_vars)
     return train_op, global_step
 
 
@@ -185,6 +185,8 @@ def run_training(opt_values):
             architecture_output = architecture_imp.prediction(architecture_input, training=True)
         loss_op = loss_imp.evaluate(architecture_output, target_output)
         train_op, global_step = training(loss_op, optimizer_imp)
+        if loss_imp.trainable():
+            loss_tr = loss_imp.train(optimizer_imp)
         # Merge all train summaries and write
         merged = tf.summary.merge_all()
         # Test
@@ -206,7 +208,6 @@ def run_training(opt_values):
         if not os.path.isdir(summary_dir):
             os.makedirs(summary_dir)
 
-
         train_writer = tf.summary.FileWriter(summary_dir + '/Train')
         test_writer = tf.summary.FileWriter(summary_dir + '/Test')
         # # The op for initializing the variables.
@@ -225,7 +226,6 @@ def run_training(opt_values):
         # for i in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
         #     print(i) 
         sys.exit()
-
 
         if execution_mode == "restore":
             # Restore variables from disk.
@@ -246,8 +246,10 @@ def run_training(opt_values):
                 # of your ops or variables, you may include them in
                 # the list passed to sess.run() and the value tensors
                 # will be returned in the tuple from the call.
-                
-                loss_value, _, summary = sess.run([loss_op, train_op, merged])
+                if loss_imp.trainable():
+                    loss_value, _, _, summary = sess.run([loss_op, train_op, loss_tr, merged])
+                else:
+                    loss_value, _, summary = sess.run([loss_op, train_op, merged])
                 duration = time.time() - start_time
                 train_writer.add_summary(summary, step)
 
