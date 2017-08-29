@@ -30,7 +30,7 @@ class DiscriminatorLoss(loss.Loss):
 
     def evaluate(self, architecture_output, target_output):
         """This method evaluates the loss for the given image and it's ground-truth.
-        
+
         The method models a discriminator neural network on a separate variable scope
         and allows for the calculation of the loss.
 
@@ -160,6 +160,13 @@ class DiscriminatorLoss(loss.Loss):
         disc_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
             labels=self.disc_out, logits=tf.ones_like(self.disc_out)), name="disc_fake_loss")
         disc_error = tf.add(disc_real, disc_fake)
+
+        # Add To Summary
+        tf.summary.scalar("discriminator_score_groundtruth", tf.nn.sigmoid(
+            tf.reduce_mean(self.disc_gt)))
+        tf.summary.scalar("discriminator_score_output", tf.nn.sigmoid(
+            tf.reduce_mean(self.disc_out)))
+        tf.summary.scalar("discriminator_error", disc_error)
 
         # Optimization
         disc_train = optimizer_imp.minimize(disc_error, var_list=disc_vars)
