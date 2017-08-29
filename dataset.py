@@ -13,12 +13,27 @@ class Dataset(metaclass=abc.ABCMeta):
         """
         pass
 
+    @abc.abstractmethod
+    def next_batch_test(self):
+        """
+
+        """
+        pass
+
     # @abc.abstractmethod
-    # def next_batch_validation(self, batch_size, num_epochs=None):
+    # def get_num_samples_test(self):
     #     """
 
     #     """
     #     pass
+
+    # @abc.abstractmethod
+    # def get_num_samples_train(self):
+    #     """
+
+    #     """
+    #     pass
+
 
 
     def verify_config(self, parameters_list):

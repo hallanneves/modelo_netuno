@@ -113,3 +113,6 @@ Executions/*
 
 Datasets/Data/*
 !Datasets/Data/.gitkeep
+
+*.png
+*.jpg
