@@ -133,6 +133,8 @@ def training(loss_op, optimizer_imp):
     Returns:
         train_op: The Op for training.
     """
+    # Get variable list
+    network_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="network")
     # Add a scalar summary for the snapshot loss.
     tf.summary.scalar('loss', loss_op)
     # Create a variable to track the global step.

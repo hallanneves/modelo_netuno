@@ -7,8 +7,8 @@ class FeatureLoss(loss.Loss):
     """This class is responsible for creating an object that calculates a Feature Reconstruction
     Loss using a VGG16 neural network with the given weights.
 
-    The class abstracts the Feature Loss allowing to be used in conjunction with other losses or
-    independetly, it's default configurations are located in a json file but they can be overriden
+    The class abstracts the Feature Loss allowing it to be used in conjunction with other losses or
+    independently. It's default configurations are located in a json file but they can be overriden
     through the constructor.
     """
 
