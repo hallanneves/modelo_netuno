@@ -212,7 +212,7 @@ def run_training(opt_values):
 
         with tf.variable_scope("model", reuse=True):
             architecture_output_test = architecture_imp.prediction(architecture_input_test,
-                                                                  training=False) # TODO: false?
+                                                                   training=False) # TODO: false?
         loss_op_test = loss_imp.evaluate(architecture_output_test, target_output_test)
         tf_test_loss = tf.placeholder(tf.float32, shape=(), name="tf_test_loss")
         test_loss = tf.summary.scalar('loss', tf_test_loss)
@@ -251,33 +251,40 @@ def run_training(opt_values):
                 # of your ops or variables, you may include them in
                 # the list passed to sess.run() and the value tensors
                 # will be returned in the tuple from the call.
-                if loss_imp.trainable():
-                    loss_value, _, _, summary = sess.run([loss_op, train_op, loss_tr, merged])
-                else:
-                    loss_value, _, summary = sess.run([loss_op, train_op, merged])
-                duration = time.time() - start_time
-                train_writer.add_summary(summary, step)
 
-                # Print an overview fairly often.
-                if step % 100 == 0:
+                if loss_imp.trainable():
+                    if step % architecture_imp.get_summary_writing_period() == 0:
+                        loss_value, _, _, summary = sess.run([loss_op, train_op, loss_tr, merged])
+                    else:
+                        loss_value, _, _ = sess.run([loss_op, train_op, loss_tr])
+                else:
+                    if step % architecture_imp.get_summary_writing_period() == 0:
+                        loss_value, _, summary = sess.run([loss_op, train_op, merged])
+                    else:
+                        loss_value, _ = sess.run([loss_op, train_op])
+                duration = time.time() - start_time
+                if step % architecture_imp.get_summary_writing_period() == 0:
+                    print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),
+                                                               duration))
+                    train_writer.add_summary(summary, step)
+
+                if step % architecture_imp.get_validation_period() == 0:
                     loss_value_sum = 0.0
                     count_test = 0.0
                     try:
-                        print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),
-                                                                   duration))
+                        start_time = time.time()
                         while True:
-                            start_time = time.time()
                             loss_value_test = sess.run(loss_op_test)
-                            duration_test = time.time() - start_time
                             count_test = count_test + 1
                             loss_value_sum = loss_value_sum + loss_value_test
                     except tf.errors.OutOfRangeError:
-                        print('Done testing')
-
+                        duration_test = time.time() - start_time
+                        print('Done testing. (%.3f sec)' % (duration_test))
                     loss_value_test = loss_value_sum / count_test
                     summary_test = sess.run(test_loss,
                                             feed_dict={tf_test_loss:loss_value_test})
                     test_writer.add_summary(summary_test, step)
+                if step % architecture_imp.get_model_saving_period() == 0:
                     # Save the variables to disk.
                     save_path = saver.save(sess, model_dir + "/model.ckpt")
                     print("Model saved in file: %s" % save_path)

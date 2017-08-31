@@ -4,7 +4,8 @@ import tensorflow as tf
 class ArchitectureDepthTest(architecture.Architecture):
     def __init__(self):
         parameters_list = ['example', 'input_size', 'output_size',
-                           'depth_size', 'summary_writing_period']
+                           'depth_size', 'summary_writing_period',
+                           "validation_period", "model_saving_period"]
 
         self.open_config(parameters_list)
 
@@ -87,3 +88,14 @@ class ArchitectureDepthTest(architecture.Architecture):
 
         tf.summary.image("architecture_output", linear_combination2)
         return linear_combination2
+
+
+
+    def get_validation_period(self):
+        return self.config_dict["validation_period"]
+
+    def get_model_saving_period(self):
+        return self.config_dict["model_saving_period"]
+
+    def get_summary_writing_period(self):
+        return self.config_dict["summary_writing_period"]

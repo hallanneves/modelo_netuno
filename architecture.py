@@ -27,6 +27,18 @@ class Architecture(metaclass=abc.ABCMeta):
         """
         pass
 
+    @abc.abstractmethod
+    def get_validation_period(self):
+        pass
+
+    @abc.abstractmethod
+    def get_model_saving_period(self):
+        pass
+
+    @abc.abstractmethod
+    def get_summary_writing_period(self):
+        pass
+
     def verify_config(self, parameters_list):
         for parameter in parameters_list:
             if parameter not in self.config_dict:
