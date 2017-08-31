@@ -155,16 +155,15 @@ def run_training(opt_values):
         opt_values: dictionary containing parameters as keys and arguments as values.
 
     """
+
+
+
     # Get architecture, dataset and loss name
     arch_name = opt_values['architecture_name']
     dataset_name = opt_values['dataset_name']
     loss_name = opt_values['loss_name']
     optimizer_name = opt_values['optimizer_name']
-    # Get implementations
-    architecture_imp = utils.get_implementation(architecture.Architecture, arch_name)
-    dataset_imp = utils.get_implementation(dataset.Dataset, dataset_name)
-    loss_imp = utils.get_implementation(loss.Loss, loss_name)
-    optimizer_imp = utils.get_implementation(optimizer.Optimizer, optimizer_name)
+
     time_str = time.strftime("%Y-%m-%d_%H:%M")
     if opt_values["execution_mode"] == "train":
         execution_dir = "Executions/" + dataset_name + "_" + arch_name + "_" + loss_name +\
@@ -173,13 +172,32 @@ def run_training(opt_values):
     elif opt_values["execution_mode"] == "restore":
         execution_dir = opt_values["execution_path"]
     log(opt_values, execution_dir)
+    # Create summary
+    model_dir = os.path.join(execution_dir, "Model")
+    if not os.path.isdir(model_dir):
+        os.makedirs(model_dir)
+    summary_dir = os.path.join(execution_dir, "Summary")
+    if not os.path.isdir(summary_dir):
+        os.makedirs(summary_dir)
+
+
+    # Get implementations
+    architecture_imp = utils.get_implementation(architecture.Architecture, arch_name)
+    dataset_imp = utils.get_implementation(dataset.Dataset, dataset_name)
+    loss_imp = utils.get_implementation(loss.Loss, loss_name)
+    optimizer_imp = utils.get_implementation(optimizer.Optimizer, optimizer_name)
+
     # Tell TensorFlow that the model will be built into the default Graph.
     graph = tf.Graph()
     with graph.as_default():
-
+        # if it load step to continue on the same point on dataset
         execution_mode = opt_values["execution_mode"]
+        if execution_mode == "train":
+            initial_step = 0
+        else:
+            initial_step = tf.train.load_variable(model_dir, "global_step")
         # Input and target output pairs.
-        architecture_input, target_output = dataset_imp.next_batch_train()
+        architecture_input, target_output = dataset_imp.next_batch_train(initial_step)
 
         with tf.variable_scope("model"):
             architecture_output = architecture_imp.prediction(architecture_input, training=True)
@@ -196,17 +214,9 @@ def run_training(opt_values):
             architecture_output_test = architecture_imp.prediction(architecture_input_test,
                                                                   training=False) # TODO: false?
         loss_op_test = loss_imp.evaluate(architecture_output_test, target_output_test)
-        collection_ref = tf.get_collection_ref(tf.GraphKeys.SUMMARIES)
-        collection_ref = []
         tf_test_loss = tf.placeholder(tf.float32, shape=(), name="tf_test_loss")
         test_loss = tf.summary.scalar('loss', tf_test_loss)
-        # Create summary
-        model_dir = os.path.join(execution_dir, "Model")
-        if not os.path.isdir(model_dir):
-            os.makedirs(model_dir)
-        summary_dir = os.path.join(execution_dir, "Summary")
-        if not os.path.isdir(summary_dir):
-            os.makedirs(summary_dir)
+
 
         train_writer = tf.summary.FileWriter(summary_dir + '/Train')
         test_writer = tf.summary.FileWriter(summary_dir + '/Test')
@@ -221,11 +231,6 @@ def run_training(opt_values):
         # epoch counter).
         sess.run(init_op)
         sess.run(init)
-        for i in tf.get_collection(tf.GraphKeys.QUEUE_RUNNERS):
-            print(i)
-        # for i in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-        #     print(i) 
-        sys.exit()
 
         if execution_mode == "restore":
             # Restore variables from disk.
@@ -259,8 +264,7 @@ def run_training(opt_values):
                     count_test = 0.0
                     try:
                         print('Step %d: loss = %.2f (%.3f sec)' % (step, np.mean(loss_value),
-                                                                duration))
-                        
+                                                                   duration))
                         while True:
                             start_time = time.time()
                             loss_value_test = sess.run(loss_op_test)
@@ -269,11 +273,10 @@ def run_training(opt_values):
                             loss_value_sum = loss_value_sum + loss_value_test
                     except tf.errors.OutOfRangeError:
                         print('Done testing')
-                        
+
                     loss_value_test = loss_value_sum / count_test
-                    print(loss_value_test)
                     summary_test = sess.run(test_loss,
-                                        feed_dict={tf_test_loss:loss_value_test})
+                                            feed_dict={tf_test_loss:loss_value_test})
                     test_writer.add_summary(summary_test, step)
                     # Save the variables to disk.
                     save_path = saver.save(sess, model_dir + "/model.ckpt")

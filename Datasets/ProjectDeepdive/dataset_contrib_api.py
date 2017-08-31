@@ -49,7 +49,7 @@ class DatasetContribApi(dataset.Dataset):
         depth = tf.cast(depth, tf.float32) * (1. / 255)
         return image, depth
 
-    def next_batch_train(self):
+    def next_batch_train(self, initial_step):
         """
         returns:
             a tuple(image, depths) where:
@@ -64,6 +64,8 @@ class DatasetContribApi(dataset.Dataset):
         dataset = dataset.shuffle(buffer_size=3000)
         dataset = dataset.batch(self.config_dict["batch_size"])
         dataset = dataset.repeat(self.config_dict["num_epochs"])  # Repeat the input.
+        dataset = dataset.skip(initial_step)
+
         iterator = dataset.make_one_shot_iterator()
 
         images, depths = iterator.get_next()

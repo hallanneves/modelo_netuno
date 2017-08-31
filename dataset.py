@@ -7,7 +7,7 @@ import json
 class Dataset(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def next_batch_train(self):
+    def next_batch_train(self, initial_step):
         """
 
         """
