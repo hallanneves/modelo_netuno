@@ -12,7 +12,7 @@ class DatasetTransmission(dataset.Dataset):
     def __init__(self):
         parameters_list = ["tfr_path", "input_size", "output_size", "turbidity_path",
                            "turbidity_size", "patch_size", "trans_minval", "trans_maxval"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.batch_size = self.config_dict["batch_size"]
         self.input_size = self.config_dict["input_size"]
         self.patch_size = self.config_dict["patch_size"]

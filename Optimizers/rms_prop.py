@@ -5,7 +5,7 @@ import tensorflow as tf
 class RMSPropOptimizer(optimizer.Optimizer):
     def __init__(self):
         parameters_list = ["learning_rate", "decay", "momentum", "epsilon"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.RMSPropOptimizer(self.config_dict["learning_rate"],
                                                    self.config_dict["decay"],
                                                    self.config_dict["momentum"],

@@ -3,8 +3,9 @@
 import abc
 import sys
 import json
+import base
 
-class Dataset(metaclass=abc.ABCMeta):
+class Dataset(base.Base):
 
     @abc.abstractmethod
     def next_batch_train(self, initial_step):
@@ -20,39 +21,15 @@ class Dataset(metaclass=abc.ABCMeta):
         """
         pass
 
-    # @abc.abstractmethod
-    # def get_num_samples_test(self):
-    #     """
+    # def verify_config(self, parameters_list):
+    #     for parameter in parameters_list:
+    #         if parameter not in self.config_dict:
+    #             raise Exception('Config: ' + parameter + ' is necessary for ' +
+    #                             self.__class__.__name__ + ' execution.')
 
-    #     """
-    #     pass
-
-    # @abc.abstractmethod
-    # def get_num_samples_train(self):
-    #     """
-
-    #     """
-    #     pass
-
-
-
-    def verify_config(self, parameters_list):
-        for parameter in parameters_list:
-            if parameter not in self.config_dict:
-                raise Exception('Config: ' + parameter + ' is necessary for ' +
-                                self.__class__.__name__ + ' execution.')
-
-    def open_config(self, parameters_list):
-        config_filename = sys.modules[self.__module__].__file__[:-3]+'.json'
-        with open(config_filename) as config_file:
-            self.config_dict = json.load(config_file)
-        self.verify_config(parameters_list)
-
-    # @abc.abstractmethod
-    # def get_N_images_train(self):
-    #     pass
-
-    # @abc.abstractmethod
-    # def get_N_images_validation(self):
-    #     pass
+    # def open_config(self, parameters_list):
+    #     config_filename = sys.modules[self.__module__].__file__[:-3]+'.json'
+    #     with open(config_filename) as config_file:
+    #         self.config_dict = json.load(config_file)
+    #     self.verify_config(parameters_list)
         

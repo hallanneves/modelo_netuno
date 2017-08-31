@@ -5,7 +5,7 @@ import tensorflow as tf
 class AdagradOptimizer(optimizer.Optimizer):
     def __init__(self):
         parameters_list = ["learning_rate", "initial_accumulator_value"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.AdagradOptimizer(self.config_dict["learning_rate"],
                                                     self.config_dict["initial_accumulator_value"])
     def minimize(self, loss, global_step=None, var_list=None,

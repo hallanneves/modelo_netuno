@@ -8,7 +8,7 @@ class ProximalAdagradOptimizer(optimizer.Optimizer):
                            "initial_accumulator_value"
                            "l1_regularization_strength",
                            "l2_regularization_strength"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.ProximalAdagradOptimizer(self.config_dict["learning_rate"],
                                                 self.config_dict["initial_accumulator_value"],
                                                 self.config_dict["l1_regularization_strength"],

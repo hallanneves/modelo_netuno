@@ -48,7 +48,7 @@ class FeatureLoss(loss.Loss):
             Nothing.
         """
         parameters_list = ["weights_file", "loss_layer"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
 
         # Override Default Weights File
         if wfile != None:

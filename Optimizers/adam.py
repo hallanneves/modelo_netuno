@@ -5,7 +5,7 @@ import tensorflow as tf
 class AdamOptimizer(optimizer.Optimizer):
     def __init__(self):
         parameters_list = ["learning_rate", "beta1", "beta2", "epsilon"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.AdamOptimizer(self.config_dict["learning_rate"],
                                                 self.config_dict["beta1"],
                                                 self.config_dict["beta2"],

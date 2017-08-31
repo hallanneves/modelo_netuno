@@ -6,16 +6,11 @@ import Datasets.ProjectDeepdive.simulator as simulator
 
 import dataset
 
-
-
-
-
-
 class DatasetContribApi(dataset.Dataset):
     def __init__(self):
         parameters_list = ["train_path", "test_path", "input_size", "output_size", "turbidity_path",
                            "turbidity_size", "range_min", "range_max"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.batch_size = self.config_dict["batch_size"]
         self.input_size = self.config_dict["input_size"]
         self.input_size_prod = self.input_size[0] * self.input_size[1] * self.input_size[2]
@@ -34,7 +29,7 @@ class DatasetContribApi(dataset.Dataset):
         self.range_max = self.config_dict["range_max"]
         self.sess = tf.Session()
         self.c, self.binf, self.range_array = simulator.acquireProperties(
-            self.turbidity_path, self.turbidity_size, self.batch_size, 
+            self.turbidity_path, self.turbidity_size, self.batch_size,
             self.range_min, self.range_max, self.sess)
 
     def _parse_function(self, record):

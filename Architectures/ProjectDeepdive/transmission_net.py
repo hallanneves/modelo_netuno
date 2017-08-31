@@ -5,7 +5,7 @@ class TransmissionNet(architecture.Architecture):
     def __init__(self):
         parameters_list = ['normalizer_parameters']
 
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
 
     def prediction(self, sample, training=False):
         n_params = self.config_dict['normalizer_parameters']
@@ -79,3 +79,13 @@ class TransmissionNet(architecture.Architecture):
         print(brelu)
 
         return brelu
+
+
+    def get_validation_period(self):
+        return self.config_dict["validation_period"]
+
+    def get_model_saving_period(self):
+        return self.config_dict["model_saving_period"]
+
+    def get_summary_writing_period(self):
+        return self.config_dict["summary_writing_period"]

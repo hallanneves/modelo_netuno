@@ -8,7 +8,7 @@ class FtrlOptimizer(optimizer.Optimizer):
                            "initial_accumulator_value",
                            "l1_regularization_strength",
                            "l2_regularization_strength"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.FtrlOptimizer(self.config_dict["learning_rate"],
                                                 self.config_dict["learning_rate_power"],
                                                 self.config_dict["initial_accumulator_value"],

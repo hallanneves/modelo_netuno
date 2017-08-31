@@ -7,7 +7,7 @@ class ProximalGradientDescentOptimizer(optimizer.Optimizer):
         parameters_list = ["learning_rate",
                            "l1_regularization_strength",
                            "l2_regularization_strength"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.ProximalGradientDescentOptimizer(self.config_dict["learning_rate"],
                                                 self.config_dict["l1_regularization_strength"],
                                                 self.config_dict["l2_regularization_strength"])

@@ -22,7 +22,7 @@ class DiscriminatorLoss(loss.Loss):
             Nothing.
         """
         parameters_list = []
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
 
         # Define defaults
         self.disc_gt = 0.0

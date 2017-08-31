@@ -1,8 +1,9 @@
 import abc
 import sys
 import json
+import base
 
-class Loss(metaclass=abc.ABCMeta):
+class Loss(base.Base):
 
     @abc.abstractmethod
     def evaluate(self, architecture_output, target_output):

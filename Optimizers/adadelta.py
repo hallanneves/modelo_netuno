@@ -5,7 +5,7 @@ import tensorflow as tf
 class AdadeltaOptimizer(optimizer.Optimizer):
     def __init__(self):
         parameters_list = ["learning_rate", "rho", "epsilon"]
-        self.open_config(parameters_list)
+        self.config_dict = self.open_config(parameters_list)
         self.optimizer = tf.train.AdadeltaOptimizer(self.config_dict["learning_rate"],
                                                     self.config_dict["rho"],
                                                     self.config_dict["epsilon"])
