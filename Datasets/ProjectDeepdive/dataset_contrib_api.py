@@ -18,10 +18,8 @@ class DatasetContribApi(dataset.Dataset):
         self.output_size_prod = self.output_size[0] * self.output_size[1] * self.output_size[2]
         self.train_path = self.config_dict["train_path"]
         self.train_file = [self.train_path + f for f in os.listdir(self.train_path)]
-        self.num_file = len(self.train_file)
         self.test_path = self.config_dict["test_path"]
         self.test_file = [self.test_path + f for f in os.listdir(self.test_path)]
-        self.num_files_test = len(self.test_file)
         #Simulator attributes
         self.turbidity_path = self.config_dict["turbidity_path"]
         self.turbidity_size = tuple(self.config_dict["turbidity_size"])
@@ -39,9 +37,11 @@ class DatasetContribApi(dataset.Dataset):
         image = tf.decode_raw(parsed_features['image_raw'], tf.uint8)
         image.set_shape([self.input_size_prod])
         image = tf.cast(image, tf.float32) * (1. / 255)
-        depth = tf.decode_raw(parsed_features['depth_raw'], tf.uint8)
+        depth = tf.decode_raw(parsed_features['depth_raw'], tf.float32)
         depth.set_shape([self.output_size_prod])
-        depth = tf.cast(depth, tf.float32) * (1. / 255)
+        depth = tf.reshape(depth, self.output_size)
+        image = tf.reshape(image, self.input_size)
+        # depth = tf.cast(depth, tf.float32)
         return image, depth
 
     def next_batch_train(self, initial_step):
@@ -64,8 +64,8 @@ class DatasetContribApi(dataset.Dataset):
         iterator = dataset.make_one_shot_iterator()
 
         images, depths = iterator.get_next()
-        depths = tf.reshape(depths, [self.batch_size] + self.output_size)
-        images = tf.reshape(images, [self.batch_size] + self.input_size)
+        #depths = tf.reshape(depths, [None] + self.output_size)
+        #images = tf.reshape(images, [None] + self.input_size)
         images = simulator.applyTurbidity(images, depths, self.c, self.binf, self.range_array)
         tf.summary.image("depth", depths)
         tf.summary.image("image", images)
@@ -89,8 +89,8 @@ class DatasetContribApi(dataset.Dataset):
         initializer = iterator.initializer
 
         images, depths = iterator.get_next()
-        depths = tf.reshape(depths, [self.batch_size] + self.output_size)
-        images = tf.reshape(images, [self.batch_size] + self.input_size)
+        # depths = tf.reshape(depths, [self.batch_size] + self.output_size)
+        # images = tf.reshape(images, [self.batch_size] + self.input_size)
         images = simulator.applyTurbidity(images, depths, self.c, self.binf, self.range_array)
         tf.summary.image("depth", depths)
         tf.summary.image("image", images)

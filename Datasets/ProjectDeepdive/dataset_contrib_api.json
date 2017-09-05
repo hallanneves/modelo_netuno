@@ -20,6 +20,6 @@
     ],
     "turbidity_path": "Datasets/Data/MistDataBase",
     "turbidity_size": [128, 128],
-    "range_max": 80.0,
-    "range_min": 8.0
+    "range_max": 2.0,
+    "range_min": 0.2
 }
