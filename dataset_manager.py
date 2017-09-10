@@ -1,8 +1,9 @@
 #import numpy as np
 #import tensorflow as tf
 import abc
+import base
 
-class DatasetManager(metaclass=abc.ABCMeta):
+class DatasetManager(base.Base):
     '''
     Abstract class designed for loading and storing
     objects from memory. 
@@ -11,35 +12,16 @@ class DatasetManager(metaclass=abc.ABCMeta):
 
 
     @abc.abstractmethod
-    def load_data(self, keys):
-        """Load Data
+    def convert_data(self):
+        """Convert Data
 
-        responsible for loading memory objects into numpy
-        arrays
-
-        Args:
-            self: the instance
-            keys: intern keys for object retrieval
-
-        Returns:
-            numpy array of the chosen data
-        """
-        pass
-
-
-    @abc.abstractmethod
-    def store_data(self, data):
-        """Store Data
-
-        responsible for converting and storing numpy objects
-        into hard drive files
+        responsible for loading datasets and storing in the proper way.
+        Usually it will be stored in tfrecords.
 
         Args:
             self: the instance
-            data: data to be stored in the DBManager format
 
-        Returns:
-            void
         """
         pass
+
     

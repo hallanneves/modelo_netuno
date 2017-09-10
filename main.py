@@ -52,7 +52,7 @@ def process_args(argv):
             print(ERROR_MSG)
             sys.exit()
         elif opt in ("-m", "--mode"):
-            if arg in ('train', 'evaluate', 'restore'):
+            if arg in ('train', 'evaluate', 'restore', 'dataset_manage'):
                 opt_values['execution_mode'] = arg
             else:
                 print(arg + 'is not a possible execution mode')
@@ -108,6 +108,9 @@ def check_needed_parameters(parameter_values):
     elif parameter_values["execution_mode"] == "evaluate":
         needed_parameters = ["architecture_name", "execution_path", "evaluate_path",
                              "evaluate_name"]
+    elif parameter_values["execution_mode"] == "dataset_manage":
+        needed_parameters = ["dataset_manager_name"]
+
     else:
         print("Parameters list must contain an execution_mode.")
         sys.exit(2)
@@ -348,6 +351,12 @@ def run_evaluate(opt_values):
     architecture_imp = utils.get_implementation(architecture.Architecture, arch_name)
     evaluate_imp.eval(opt_values, architecture_imp)
 
+def run_dataset_manager(opt_values):
+    dm_name = opt_values['dataset_manager_name']
+    dataset_manager_imp = utils.get_implementation(dataset_manager.DatasetManager,dm_name)
+    dataset_manager_imp.convert_data()
+
+
 
 
 def main(opt_values):
@@ -359,6 +368,8 @@ def main(opt_values):
         run_training(opt_values)
     elif execution_mode == 'evaluate':
         run_evaluate(opt_values)
+    elif execution_mode == 'dataset_manage':
+        run_dataset_manager(opt_values)
 
 if __name__ == "__main__":
     OPT_VALUES = process_args(sys.argv[1:])
