@@ -23,7 +23,35 @@ import optimizer
 import Optimizers
 import utils
 
-ERROR_MSG = 'main.py -a <architecture> -d <dataset> -g <dataset_manager> -l <loss> -o <optimizer>'
+
+HELP_MSG = """usage: python main.py [-h] [-m MODE] [-a ARCHITECTURE] [-d DATASET]
+           [-g DATASET_MANAGER] [-l LOSS] [-o OPTIMIZER] [-e EVALUATE]
+           [-p EXECUTION_PATH] [--evaluate_path EVALUATE_PATH]
+optional arguments
+    -h, --help                              show this help message and exit
+    -m, --mode MODE                         specifies one of the possible modes (train,
+                                            evaluate, restore, dataset_manage)
+    -a, --architecture ARCHITECTURE         specifies an architecture it is required in all
+                                            modes except for dataset_manage
+    -d, --dataset DATASET                   specifies one dataset implementation it is
+                                            required for all modes except dataset_manage  
+    -g, --dataset_manager DATASET_MANAGER   specifies one dataset manager implementation
+                                            it is required and exclusively used in 
+                                            dataset_manage mode
+    -l, --loss LOSS                         specifies one loss implementation and is
+                                            required for all modes except dataset_manage
+    -o, --optimizer OPTIMIZER               specifies an optimizer implementation and is
+                                            required for train and restore modes
+    -e, --evaluate EVALUATE                 specifies an evaluate implementation it is
+                                            required for evaluate mode only
+    --evaluate_path EVALUATE_PATH           specifies the folder were the exemples to be evaluated
+                                            are located
+    -p, --execution_path EXECUTION_PATH     specifies an execution path and it is required
+                                            only in restore mode
+"""
+
+
+
 def process_args(argv):
     """
     It checks and organizes the arguments in a dictionary.
@@ -41,15 +69,15 @@ def process_args(argv):
                      "optimizer=", "evaluate_path=", "evaluate="]
         opts, _ = getopt.getopt(argv, "ha:d:m:g:l:p:o:e:", long_opts)
         if opts == []:
-            print(ERROR_MSG)
+            print(HELP_MSG)
             sys.exit(2)
     except getopt.GetoptError:
-        print(ERROR_MSG)
+        print(HELP_MSG)
         sys.exit(2)
     opt_values = {}
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print(ERROR_MSG)
+            print(HELP_MSG)
             sys.exit()
         elif opt in ("-m", "--mode"):
             if arg in ('train', 'evaluate', 'restore', 'dataset_manage'):
@@ -353,7 +381,7 @@ def run_evaluate(opt_values):
 
 def run_dataset_manager(opt_values):
     dm_name = opt_values['dataset_manager_name']
-    dataset_manager_imp = utils.get_implementation(dataset_manager.DatasetManager,dm_name)
+    dataset_manager_imp = utils.get_implementation(dataset_manager.DatasetManager, dm_name)
     dataset_manager_imp.convert_data()
 
 

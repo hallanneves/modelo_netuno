@@ -3,4 +3,4 @@ import importlib
 
 for module in os.listdir(os.path.dirname(__file__)):
     if module != '__init__.py' and module[-3:] == '.py':
-        __import__('Layers.'+module[:-3], locals(), globals())
+        __import__('Architectures.Layers.'+module[:-3], locals(), globals())
