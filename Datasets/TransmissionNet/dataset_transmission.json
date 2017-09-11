@@ -1,7 +1,8 @@
 {
-    "tfr_path": "Datasets/Data/kinect/tfrecords/",
-    "batch_size": 5,
-    "num_epochs": 20,
+    "train_path": "Datasets/Data/nyu/tfrecords/train/",
+    "test_path": "Datasets/Data/nyu/tfrecords/test/",
+    "batch_size": 256,
+    "num_epochs": 128,
     "num_threads": 2,
     "input_size": [
         224,
